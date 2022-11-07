@@ -1,0 +1,22 @@
+version: '3.1'
+
+services:
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-password}"
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_DB: "${POSTGRES_DB:-newsletter}"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+  adminer:
+    image: adminer
+    ports:
+      - 8080:8080
+  api:
+    image: zero2prod
+    environment:
+      Z2P_DATABASE_HOST: "db"
+    ports:
+      - 3000:3000

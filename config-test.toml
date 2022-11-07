@@ -1,0 +1,9 @@
+env_filter = "debug"
+
+[app]
+host = "127.0.0.1"
+port = 0
+
+[database]
+# in tests this will be appended by a random string
+name = "test"

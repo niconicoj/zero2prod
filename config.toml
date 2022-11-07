@@ -1,0 +1,16 @@
+# the first item should be the global logging level alone
+# this is important to determine which sink the logs should
+# be directed to during tests
+env_filter = "info,sqlx=warn,mio=off"
+
+[app]
+name = "zero2prod"
+host = "0.0.0.0"
+port = 3000
+
+[database]
+host = "127.0.0.1"
+port = 5432
+username = "postgres"
+password = "password"
+name = "newsletter"
