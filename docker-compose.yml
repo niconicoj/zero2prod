@@ -14,9 +14,3 @@ services:
     image: adminer
     ports:
       - 8080:8080
-  api:
-    image: zero2prod
-    environment:
-      Z2P_DATABASE_HOST: "db"
-    ports:
-      - 3000:3000

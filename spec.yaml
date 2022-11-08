@@ -16,3 +16,25 @@ services:
     instance_size_slug: basic-xxs
     routes:
       - path: /
+    envs:
+      - key: Z2P_DATABASE_USERNAME
+        scope: RUN_TIME
+        value: ${newsletter.USERNAME}
+      - key: Z2P_DATABASE_PASSWORD
+        scope: RUN_TIME
+        value: ${newsletter.PASSWORD}
+      - key: Z2P_DATABASE_HOST
+        scope: RUN_TIME
+        value: ${newsletter.HOSTNAME}
+      - key: Z2P_DATABASE_PORT
+        scope: RUN_TIME
+        value: ${newsletter.PORT}
+      - key: Z2P_DATABASE_NAME
+        scope: RUN_TIME
+        value: ${newsletter.DATABASE}
+databases:
+  - engine: PG
+    name: newsletter
+    num_nodes: 1
+    size: db-s-dev-database
+    version: "12"

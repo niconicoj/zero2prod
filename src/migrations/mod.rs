@@ -1,6 +1,8 @@
-use sea_orm::{ConnectionTrait, Database, DatabaseBackend, DatabaseConnection, Statement};
+use sea_orm::{
+    ConnectionTrait, DatabaseBackend, DatabaseConnection, SqlxPostgresConnector, Statement,
+};
 use sea_orm_migration::prelude::*;
-use secrecy::ExposeSecret;
+use sqlx::postgres::PgPoolOptions;
 use tracing::{error, info};
 
 use crate::configuration::DatabaseSettings;
@@ -34,20 +36,7 @@ pub async fn create_database(
     db_settings: &DatabaseSettings,
 ) -> Result<DatabaseConnection, DbErr> {
     let conn = match conn.get_database_backend() {
-        DatabaseBackend::MySql => {
-            conn.execute(Statement::from_string(
-                conn.get_database_backend(),
-                format!("CREATE DATABASE IF NOT EXISTS `{}`;", db_settings.name),
-            ))
-            .await?;
-
-            let url = format!(
-                "{}/{}",
-                db_settings.connection_string_no_db().expose_secret(),
-                db_settings.name
-            );
-            Database::connect(&url).await?
-        }
+        DatabaseBackend::MySql => return Err(DbErr::Custom("MySQL unsupported".to_string())),
         DatabaseBackend::Postgres => {
             let result = conn
                 .execute(Statement::from_string(
@@ -71,12 +60,11 @@ pub async fn create_database(
                 _ => {}
             };
 
-            let url = format!(
-                "{}/{}",
-                db_settings.connection_string_no_db().expose_secret(),
-                db_settings.name
-            );
-            Database::connect(&url).await?
+            let connection_pool = PgPoolOptions::new()
+                .acquire_timeout(std::time::Duration::from_secs(20))
+                .connect_lazy_with(db_settings.with_db());
+
+            SqlxPostgresConnector::from_sqlx_postgres_pool(connection_pool)
         }
         DatabaseBackend::Sqlite => conn,
     };

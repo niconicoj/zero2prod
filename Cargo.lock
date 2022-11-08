@@ -2983,6 +2983,7 @@ dependencies = [
  "sea-orm-migration",
  "secrecy",
  "serde",
+ "sqlx",
  "tokio",
  "tower",
  "tower-http",

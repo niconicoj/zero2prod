@@ -4,8 +4,8 @@ use axum::{http::HeaderValue, routing::IntoMakeService, Extension, Router, Serve
 use configuration::Settings;
 use hyper::{header::HeaderName, server::conn::AddrIncoming, Request, Response};
 use routes::router;
-use sea_orm::{prelude::Uuid, Database, DbErr};
-use secrecy::ExposeSecret;
+use sea_orm::{prelude::Uuid, DbErr, SqlxPostgresConnector};
+use sqlx::postgres::PgPoolOptions;
 use tower::ServiceBuilder;
 use tower_http::{
     classify::ServerErrorsFailureClass,
@@ -38,20 +38,20 @@ impl MakeRequestId for UuidMakeRequestId {
 pub async fn run(
     settings: &Settings,
 ) -> Result<Server<AddrIncoming, IntoMakeService<Router>>, DbErr> {
-    info!(
-        "connecting to database at {} on port {}",
-        settings.database.host, settings.database.port
-    );
-    let mut conn =
-        Database::connect(settings.database.connection_string_no_db().expose_secret()).await?;
-    conn = migrations::create_database(conn, &settings.database).await?;
+    let connection_pool = PgPoolOptions::new()
+        .acquire_timeout(std::time::Duration::from_secs(20))
+        .connect_lazy_with(settings.database.with_db());
+
+    let conn = SqlxPostgresConnector::from_sqlx_postgres_pool(connection_pool);
+
     migrations::run_migrations(&conn).await?;
 
     let x_request_id = HeaderName::from_static("x-request-id");
+
     let addr: std::net::SocketAddr = format!("{}:{}", settings.app.host, settings.app.port)
         .parse()
         .expect("failed to parse host:port");
-    //let addr = std::net::SocketAddr::from(([127, 0, 0, 1], settings.app.port));
+
     Ok(axum::Server::bind(&addr).serve(
         router()
             .layer(
