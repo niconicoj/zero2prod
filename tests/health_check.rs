@@ -1,12 +1,11 @@
 use hyper::StatusCode;
 use sea_orm::prelude::Uuid;
-use sea_orm::{prelude::*, *};
+use sea_orm::prelude::*;
 use tokio::sync::OnceCell;
 use zero2prod::configuration::{get_configuration, Settings};
 
-use secrecy::ExposeSecret;
+use zero2prod::db::Db;
 use zero2prod::entities::prelude::*;
-use zero2prod::migrations;
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
 struct TestApp {
@@ -36,11 +35,12 @@ impl TestApp {
         ONCE.get_or_init(|| tracing(&configuration)).await;
 
         configuration.database.name = Uuid::new_v4().to_string();
+        let db = Db::create_database(&configuration.database).await?;
+
         let server = zero2prod::run(&configuration).await.unwrap();
         let url = format!("http://{}", server.local_addr());
         let _ = tokio::spawn(server);
-        let db =
-            Database::connect(configuration.database.connection_string().expose_secret()).await?;
+
         println!(
             "spawned app => url: {}, db: {}",
             url, configuration.database.name
@@ -53,14 +53,8 @@ impl TestApp {
     }
 
     async fn clean(&mut self) -> Result<(), DbErr> {
-        self.db = Database::connect(
-            self.configuration
-                .database
-                .connection_string_no_db()
-                .expose_secret(),
-        )
-        .await?;
-        migrations::wipe_database(&self.db, &self.configuration.database).await
+        Db::wipe_database(&self.configuration.database).await?;
+        Ok(())
     }
 }
 

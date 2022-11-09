@@ -2,10 +2,10 @@ use std::time::Duration;
 
 use axum::{http::HeaderValue, routing::IntoMakeService, Extension, Router, Server};
 use configuration::Settings;
+use db::Db;
 use hyper::{header::HeaderName, server::conn::AddrIncoming, Request, Response};
 use routes::router;
-use sea_orm::{prelude::Uuid, DbErr, SqlxPostgresConnector};
-use sqlx::postgres::PgPoolOptions;
+use sea_orm::{prelude::Uuid, DbErr};
 use tower::ServiceBuilder;
 use tower_http::{
     classify::ServerErrorsFailureClass,
@@ -18,6 +18,7 @@ mod routes;
 mod startup;
 
 pub mod configuration;
+pub mod db;
 pub mod entities;
 pub mod migrations;
 pub mod telemetry;
@@ -38,11 +39,7 @@ impl MakeRequestId for UuidMakeRequestId {
 pub async fn run(
     settings: &Settings,
 ) -> Result<Server<AddrIncoming, IntoMakeService<Router>>, DbErr> {
-    let connection_pool = PgPoolOptions::new()
-        .acquire_timeout(std::time::Duration::from_secs(20))
-        .connect_lazy_with(settings.database.with_db());
-
-    let conn = SqlxPostgresConnector::from_sqlx_postgres_pool(connection_pool);
+    let conn = Db::init_db_connection(&settings.database);
 
     migrations::run_migrations(&conn).await?;
 
