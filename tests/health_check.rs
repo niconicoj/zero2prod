@@ -6,6 +6,7 @@ use zero2prod::configuration::{get_configuration, Settings};
 
 use zero2prod::db::Db;
 use zero2prod::entities::prelude::*;
+use zero2prod::migrations;
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
 struct TestApp {
@@ -37,7 +38,8 @@ impl TestApp {
         configuration.database.name = Uuid::new_v4().to_string();
         let db = Db::create_database(&configuration.database).await?;
 
-        let server = zero2prod::run(&configuration).await.unwrap();
+        let (server, conn) = zero2prod::run(&configuration).await.unwrap();
+        migrations::run_migrations(&conn).await?;
         let url = format!("http://{}", server.local_addr());
         let _ = tokio::spawn(server);
 

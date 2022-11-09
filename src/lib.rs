@@ -5,7 +5,7 @@ use configuration::Settings;
 use db::Db;
 use hyper::{header::HeaderName, server::conn::AddrIncoming, Request, Response};
 use routes::router;
-use sea_orm::{prelude::Uuid, DbErr};
+use sea_orm::{prelude::Uuid, DatabaseConnection, DbErr};
 use tower::ServiceBuilder;
 use tower_http::{
     classify::ServerErrorsFailureClass,
@@ -38,10 +38,14 @@ impl MakeRequestId for UuidMakeRequestId {
 
 pub async fn run(
     settings: &Settings,
-) -> Result<Server<AddrIncoming, IntoMakeService<Router>>, DbErr> {
+) -> Result<
+    (
+        Server<AddrIncoming, IntoMakeService<Router>>,
+        DatabaseConnection,
+    ),
+    DbErr,
+> {
     let conn = Db::init_db_connection(&settings.database);
-
-    migrations::run_migrations(&conn).await?;
 
     let x_request_id = HeaderName::from_static("x-request-id");
 
@@ -49,58 +53,63 @@ pub async fn run(
         .parse()
         .expect("failed to parse host:port");
 
-    Ok(axum::Server::bind(&addr).serve(
-        router()
-            .layer(
-                ServiceBuilder::new()
-                    .layer(Extension(conn))
-                    .layer(SetRequestIdLayer::new(
-                        x_request_id.clone(),
-                        UuidMakeRequestId::default(),
-                    ))
-                    .layer(
-                        TraceLayer::new_for_http()
-                            .make_span_with(|_request: &Request<_>| {
-                                info_span!(
-                                    "request",
-                                    request_id = tracing::field::Empty,
-                                    version = tracing::field::Empty,
-                                    method = tracing::field::Empty,
-                                    uri = tracing::field::Empty,
-                                    status_code = tracing::field::Empty
-                                )
-                            })
-                            .on_request(|req: &Request<_>, span: &Span| {
-                                let default_id = HeaderValue::from_static("");
-                                let request_id = req
-                                    .headers()
-                                    .get("x-request-id")
-                                    .unwrap_or(&default_id)
-                                    .to_str()
-                                    .expect("non ascii uuid");
-                                span.record("request_id", &tracing::field::display(request_id));
-                                span.record("version", &tracing::field::debug(req.version()));
-                                span.record("method", &tracing::field::display(req.method()));
-                                span.record("uri", &tracing::field::display(req.uri()));
-                            })
-                            .on_response(|res: &Response<_>, lat: Duration, span: &Span| {
-                                span.record(
-                                    "status_code",
-                                    &tracing::field::display(res.status().as_u16()),
-                                );
-                                if lat.as_millis() > 0 {
-                                    info!("request took {}ms", lat.as_millis());
-                                } else {
-                                    info!("request took {}µs", lat.as_micros());
-                                }
-                            })
-                            .on_failure(
-                                |error: ServerErrorsFailureClass, _lat: Duration, _span: &Span| {
-                                    error!("{}", error);
-                                },
-                            ),
-                    ),
-            )
-            .into_make_service(),
+    Ok((
+        axum::Server::bind(&addr).serve(
+            router()
+                .layer(
+                    ServiceBuilder::new()
+                        .layer(Extension(conn.clone()))
+                        .layer(SetRequestIdLayer::new(
+                            x_request_id.clone(),
+                            UuidMakeRequestId::default(),
+                        ))
+                        .layer(
+                            TraceLayer::new_for_http()
+                                .make_span_with(|_request: &Request<_>| {
+                                    info_span!(
+                                        "request",
+                                        request_id = tracing::field::Empty,
+                                        version = tracing::field::Empty,
+                                        method = tracing::field::Empty,
+                                        uri = tracing::field::Empty,
+                                        status_code = tracing::field::Empty
+                                    )
+                                })
+                                .on_request(|req: &Request<_>, span: &Span| {
+                                    let default_id = HeaderValue::from_static("");
+                                    let request_id = req
+                                        .headers()
+                                        .get("x-request-id")
+                                        .unwrap_or(&default_id)
+                                        .to_str()
+                                        .expect("non ascii uuid");
+                                    span.record("request_id", &tracing::field::display(request_id));
+                                    span.record("version", &tracing::field::debug(req.version()));
+                                    span.record("method", &tracing::field::display(req.method()));
+                                    span.record("uri", &tracing::field::display(req.uri()));
+                                })
+                                .on_response(|res: &Response<_>, lat: Duration, span: &Span| {
+                                    span.record(
+                                        "status_code",
+                                        &tracing::field::display(res.status().as_u16()),
+                                    );
+                                    if lat.as_millis() > 0 {
+                                        info!("request took {}ms", lat.as_millis());
+                                    } else {
+                                        info!("request took {}µs", lat.as_micros());
+                                    }
+                                })
+                                .on_failure(
+                                    |error: ServerErrorsFailureClass,
+                                     _lat: Duration,
+                                     _span: &Span| {
+                                        error!("{}", error);
+                                    },
+                                ),
+                        ),
+                )
+                .into_make_service(),
+        ),
+        conn.clone(),
     ))
 }

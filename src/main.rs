@@ -1,10 +1,11 @@
 use clap::Parser;
 use std::process::exit;
+use tokio::join;
 
 use tracing::{error, info};
 use zero2prod::{
     configuration::get_configuration,
-    run,
+    migrations, run,
     telemetry::{get_subscriber, init_subscriber},
 };
 
@@ -32,10 +33,13 @@ async fn main() {
     }
     info!("log filter : {}", &configuration.env_filter);
 
-    let server = run(&configuration).await.unwrap();
+    let (server, conn) = run(&configuration).await.unwrap();
     info!(
         "accepting connection at {}",
         server.local_addr().to_string()
     );
-    server.await.unwrap();
+
+    let (srv_result, db_res) = join!(server, migrations::run_migrations(&conn));
+    db_res.unwrap();
+    srv_result.unwrap();
 }
