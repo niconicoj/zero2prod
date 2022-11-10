@@ -17,22 +17,16 @@ services:
     envs:
       - key: Z2P_DATABASE_USERNAME
         scope: RUN_TIME
-        value: ${newsletter.USERNAME}
+        value: ${zero2prod-db.USERNAME}
       - key: Z2P_DATABASE_PASSWORD
         scope: RUN_TIME
-        value: ${newsletter.PASSWORD}
+        value: ${zero2prod-db.PASSWORD}
       - key: Z2P_DATABASE_HOST
         scope: RUN_TIME
-        value: ${newsletter.HOSTNAME}
+        value: ${zero2prod-db.HOSTNAME}
       - key: Z2P_DATABASE_PORT
         scope: RUN_TIME
-        value: ${newsletter.PORT}
+        value: ${zero2prod-db.PORT}
       - key: Z2P_DATABASE_NAME
         scope: RUN_TIME
-        value: ${newsletter.DATABASE}
-databases:
-  - engine: PG
-    name: newsletter
-    num_nodes: 1
-    size: db-s-dev-database
-    version: "12"
+        value: ${zero2prod-db.DATABASE}
