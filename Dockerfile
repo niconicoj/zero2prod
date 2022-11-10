@@ -18,4 +18,6 @@ RUN apk add --no-cache openssl-dev
 COPY --from=builder /app/target/release/zero2prod zero2prod
 COPY config.toml config.toml
 
+EXPOSE 3000
+
 ENTRYPOINT [ "./zero2prod" ]
