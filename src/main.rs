@@ -33,7 +33,9 @@ async fn main() {
     }
     info!("log filter : {}", &configuration.env_filter);
 
-    let (server, conn) = run(&configuration).await.unwrap();
+    let (server, conn) = run(&configuration)
+        .await
+        .expect("failed to bootstrap server");
     info!(
         "accepting connection at {}",
         server.local_addr().to_string()
