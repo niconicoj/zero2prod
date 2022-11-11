@@ -1,7 +1,7 @@
 use config::Environment;
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
-use sqlx::postgres::PgConnectOptions;
+use sqlx::postgres::{PgConnectOptions, PgSslMode};
 
 #[derive(Deserialize, Clone)]
 pub struct Settings {
@@ -25,6 +25,7 @@ pub struct DatabaseSettings {
     pub port: u16,
     pub host: String,
     pub name: String,
+    pub ssl: bool,
 }
 
 impl DatabaseSettings {

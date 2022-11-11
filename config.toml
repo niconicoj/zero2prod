@@ -14,3 +14,4 @@ port = 5432
 username = "postgres"
 password = "password"
 name = "newsletter"
+ssl = true

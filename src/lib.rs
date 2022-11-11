@@ -50,7 +50,8 @@ pub async fn run(
     let x_request_id = HeaderName::from_static("x-request-id");
 
     let addr = format!("{}:{}", settings.app.host, settings.app.port);
-    let listener = std::net::TcpListener::bind(&addr).unwrap();
+    let listener =
+        std::net::TcpListener::bind(&addr).expect(&format!("failed to bind to {}", addr));
 
     Ok((
         axum::Server::from_tcp(listener).unwrap().serve(
