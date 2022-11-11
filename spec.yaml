@@ -17,6 +17,9 @@ services:
     routes:
       - path: /
     envs:
+      - key: Z2P_APP_HOST
+        scope: RUN_TIME
+        value: ${APP_URL}
       - key: Z2P_DATABASE_USERNAME
         scope: RUN_TIME
         value: ${zero2prod-db.USERNAME}

@@ -49,12 +49,11 @@ pub async fn run(
 
     let x_request_id = HeaderName::from_static("x-request-id");
 
-    let addr: std::net::SocketAddr = format!("{}:{}", settings.app.host, settings.app.port)
-        .parse()
-        .expect("failed to parse host:port");
+    let addr = format!("{}:{}", settings.app.host, settings.app.port);
+    let listener = std::net::TcpListener::bind(&addr).unwrap();
 
     Ok((
-        axum::Server::bind(&addr).serve(
+        axum::Server::from_tcp(listener).unwrap().serve(
             router()
                 .layer(
                     ServiceBuilder::new()
