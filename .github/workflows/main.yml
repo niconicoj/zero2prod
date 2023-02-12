@@ -12,11 +12,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Setup
+      run: |
+        cargo install tarpaulin
+        
     - name: Toolchain info
       run: |
-        cargo --version --verbose
         rustc --version
-        argo clippy --version
+        cargo --version --verbose
+        cargo clippy --version
+        cargo tarpaulin --version
 
     - name: Lint
       run: |
