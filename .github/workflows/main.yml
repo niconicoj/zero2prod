@@ -1,0 +1,31 @@
+name: Rust
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Toolchain info
+      run: |
+          cargo --version --verbose
+          rustc --version
+          cargo clippy --version
+
+    - name: Lint
+      run: |
+          cd phaser
+          cargo fmt -- --check
+          cargo clippy -- -D warnings
+
+    - name: Test
+      run: |
+          cd phaser
+          cargo check
+          cargo test --all
