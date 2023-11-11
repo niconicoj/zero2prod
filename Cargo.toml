@@ -3,11 +3,20 @@ name = "zero2prod"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/main.rs"
+name = "zero2prod"
 
 [dependencies]
 axum = { version = "0.6.20", features = ["macros", "headers"] }
+hyper = "0.14.27"
 tokio = { version = "1.33.0", features = ["full"] }
 tracing = "0.1.40"
 tracing-attributes = "0.1.27"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+
+[dev-dependencies]
+reqwest = "0.11.22"
