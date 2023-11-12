@@ -1,13 +1,17 @@
 use std::net::TcpListener;
 
 use axum::{
-    response::IntoResponse,
-    routing::{get, IntoMakeService},
+    routing::{get, post, IntoMakeService},
     Router,
 };
 
-use hyper::{server::conn::AddrIncoming, StatusCode};
+use hyper::server::conn::AddrIncoming;
 use tracing::info;
+
+use crate::handlers::{health_check::health_check, subscriptions::subscribe};
+
+pub mod configuration;
+mod handlers;
 
 pub type Server = axum::Server<AddrIncoming, IntoMakeService<Router>>;
 
@@ -17,9 +21,9 @@ pub struct ServerArgs {
 }
 
 pub fn server(listener: TcpListener) -> Server {
-    tracing_subscriber::fmt::init();
-
-    let app = Router::new().route("/health_check", get(health_check));
+    let app = Router::new()
+        .route("/health_check", get(health_check))
+        .route("/subscriptions", post(subscribe));
 
     let addr = listener
         .local_addr()
@@ -28,8 +32,4 @@ pub fn server(listener: TcpListener) -> Server {
     axum::Server::from_tcp(listener)
         .unwrap()
         .serve(app.into_make_service())
-}
-
-async fn health_check() -> impl IntoResponse {
-    StatusCode::OK
 }
