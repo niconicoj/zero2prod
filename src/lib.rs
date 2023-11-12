@@ -6,11 +6,14 @@ use axum::{
 };
 
 use hyper::server::conn::AddrIncoming;
+use sqlx::PgPool;
 use tracing::info;
 
 use crate::handlers::{health_check::health_check, subscriptions::subscribe};
 
 pub mod configuration;
+mod db;
+mod error;
 mod handlers;
 
 pub type Server = axum::Server<AddrIncoming, IntoMakeService<Router>>;
@@ -20,15 +23,17 @@ pub struct ServerArgs {
     pub address: String,
 }
 
-pub fn server(listener: TcpListener) -> Server {
+pub fn server(listener: TcpListener, pool: PgPool) -> Server {
     let app = Router::new()
         .route("/health_check", get(health_check))
-        .route("/subscriptions", post(subscribe));
+        .route("/subscriptions", post(subscribe))
+        .with_state(pool);
 
     let addr = listener
         .local_addr()
         .expect("Failed to get listener address");
     info!("listening on {}", addr);
+
     axum::Server::from_tcp(listener)
         .unwrap()
         .serve(app.into_make_service())

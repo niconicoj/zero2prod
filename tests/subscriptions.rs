@@ -1,19 +1,16 @@
-use std::net::TcpListener;
-
 use hyper::StatusCode;
 
-use sqlx::{Connection, PgConnection};
-use zero2prod::configuration;
+mod common;
 
 #[tokio::test]
 async fn subscribe_returns_a_200_for_valid_form_data() {
-    let app_address = spawn_app();
+    let test_app = common::test_app::spawn_app().await;
 
     let client = reqwest::Client::new();
 
     let body = "name=John%20Doe&email=john.doe@gmail.com";
     let response = client
-        .post(&format!("{app_address}/subscriptions"))
+        .post(&format!("{}/subscriptions", test_app.address))
         .header("Content-Type", "application/x-www-form-urlencoded")
         .body(body)
         .send()
@@ -22,13 +19,8 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let configuration = configuration::get_configuration().expect("Failed to read configuration.");
-    let mut connection = PgConnection::connect(&configuration.database.connection_string())
-        .await
-        .expect("Failed to connect to Postgres.");
-
     let saved = sqlx::query!("SELECT email, name FROM subscriptions")
-        .fetch_one(&mut connection)
+        .fetch_one(&test_app.db_pool)
         .await
         .expect("Failed to fetch saved subscription.");
 
@@ -38,7 +30,7 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
 
 #[tokio::test]
 async fn subscribe_returns_a_400_for_invalid_form_data() {
-    let app_address = spawn_app();
+    let test_app = common::test_app::spawn_app().await;
 
     let client = reqwest::Client::new();
 
@@ -50,7 +42,7 @@ async fn subscribe_returns_a_400_for_invalid_form_data() {
 
     for (body, error) in test_cases {
         let response = client
-            .post(&format!("{app_address}/subscriptions"))
+            .post(&format!("{}/subscriptions", test_app.address))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(body)
             .send()
@@ -65,12 +57,4 @@ async fn subscribe_returns_a_400_for_invalid_form_data() {
             response.status()
         );
     }
-}
-
-fn spawn_app() -> String {
-    let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind listener");
-    let port = listener.local_addr().unwrap().port();
-    let address = format!("http://127.0.0.1:{port}");
-    tokio::spawn(zero2prod::server(listener));
-    address
 }

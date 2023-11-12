@@ -1,6 +1,10 @@
 use std::net::TcpListener;
 
-use zero2prod::{configuration::get_configuration, server};
+use sqlx::postgres::PgPoolOptions;
+use zero2prod::{
+    configuration::{get_configuration, WithDb},
+    server,
+};
 
 #[tokio::main]
 async fn main() {
@@ -8,5 +12,10 @@ async fn main() {
     let address = format!("127.0.0.1:{}", configuration.port);
     let listener = TcpListener::bind(&address).expect("Failed to bind listener");
 
-    server(listener).await.unwrap()
+    let pool = PgPoolOptions::new()
+        .connect(&configuration.database.connection_string(WithDb::Yes))
+        .await
+        .expect("Failed to connect to database");
+
+    server(listener, pool).await.unwrap()
 }

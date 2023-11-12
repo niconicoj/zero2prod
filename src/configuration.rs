@@ -15,12 +15,27 @@ pub struct DatabaseConfig {
     pub database_name: String,
 }
 
+pub enum WithDb {
+    Yes,
+    No,
+}
+
 impl DatabaseConfig {
-    pub fn connection_string(&self) -> String {
-        format!(
-            "postgres://{}:{}@{}:{}/{}",
-            self.username, self.password, self.host, self.port, self.database_name
-        )
+    pub fn connection_string(&self, with_db: WithDb) -> String {
+        match with_db {
+            WithDb::Yes => {
+                format!(
+                    "postgres://{}:{}@{}:{}/{}",
+                    self.username, self.password, self.host, self.port, self.database_name
+                )
+            }
+            WithDb::No => {
+                format!(
+                    "postgres://{}:{}@{}:{}",
+                    self.username, self.password, self.host, self.port
+                )
+            }
+        }
     }
 }
 

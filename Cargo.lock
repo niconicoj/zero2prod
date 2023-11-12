@@ -2116,6 +2116,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-async-drop"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e57fbf1da3f18c8a95469f8973c138b0a99f4ae761885c3646b0c61139b0522"
+
+[[package]]
 name = "tokio-macros"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2327,6 +2333,9 @@ name = "uuid"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88ad59a7560b41a70d191093a945f0b87bc1deeda46fb237479708a1d6b6cdfc"
+dependencies = [
+ "getrandom",
+]
 
 [[package]]
 name = "valuable"
@@ -2636,9 +2645,11 @@ dependencies = [
  "serde",
  "sqlx",
  "tokio",
+ "tokio-async-drop",
  "tracing",
  "tracing-attributes",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]
