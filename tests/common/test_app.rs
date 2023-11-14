@@ -1,31 +1,18 @@
-use std::net::TcpListener;
+use std::{future::Future, net::TcpListener, panic, pin::Pin};
 
 use sqlx::{Connection, Executor, PgConnection, PgPool};
-use tokio::runtime::Handle;
 use uuid::Uuid;
 use zero2prod::configuration::{Configuration, WithDb};
 
 pub struct TestApp {
-    pub address: String,
-    db_name: String,
+    pub app_address: String,
     pub db_pool: PgPool,
 }
 
-impl Drop for TestApp {
-    fn drop(&mut self) {
-        let handle = Handle::current();
-        let db_name = self.db_name.clone();
-        let pool = self.db_pool.clone();
-        std::thread::spawn(move || {
-            handle.block_on(delete_test_db(pool, db_name));
-        });
-    }
-}
-
-pub async fn spawn_app() -> TestApp {
+pub async fn spawn_app() -> (TestApp, String, String) {
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind listener");
     let port = listener.local_addr().unwrap().port();
-    let address = format!("http://127.0.0.1:{port}");
+    let app_address = format!("http://127.0.0.1:{port}");
 
     let mut configuration =
         zero2prod::configuration::get_configuration().expect("Failed to read configuration");
@@ -35,17 +22,20 @@ pub async fn spawn_app() -> TestApp {
         Uuid::new_v4()
     );
 
-    let db_pool = configure_database(&configuration).await;
+    let (test_database_name, db_pool) = configure_database(&configuration).await;
 
     tokio::spawn(zero2prod::server(listener, db_pool.clone()));
-    TestApp {
-        address,
-        db_pool,
-        db_name: configuration.database.database_name,
-    }
+    (
+        TestApp {
+            app_address,
+            db_pool,
+        },
+        test_database_name,
+        configuration.database.connection_string(WithDb::No),
+    )
 }
 
-pub async fn configure_database(configuration: &Configuration) -> PgPool {
+pub async fn configure_database(configuration: &Configuration) -> (String, PgPool) {
     let mut conn = PgConnection::connect(&configuration.database.connection_string(WithDb::No))
         .await
         .expect("Failed to connect to Postgres");
@@ -69,12 +59,53 @@ pub async fn configure_database(configuration: &Configuration) -> PgPool {
         .await
         .expect("Failed to migrate database");
 
-    db_pool
+    (configuration.database.database_name.clone(), db_pool)
 }
 
-async fn delete_test_db(pg_pool: PgPool, db_name: String) {
-    sqlx::query(&format!(r#"DROP DATABASE "{}";"#, db_name))
-        .execute(&pg_pool)
+async fn drop_database(test_database_name: String, db_conn_string: String) {
+    let mut conn = PgConnection::connect(&db_conn_string)
         .await
-        .expect("Failed to delete test database");
+        .expect("Failed to connect to Postgres");
+
+    conn.execute(
+        format!(
+            r#"
+        SELECT pg_terminate_backend(pg_stat_activity.pid)
+        FROM pg_stat_activity
+        WHERE pg_stat_activity.datname = '{}';
+    "#,
+            test_database_name
+        )
+        .as_str(),
+    )
+    .await
+    .unwrap();
+
+    conn.execute(format!(r#"DROP DATABASE "{}";"#, test_database_name).as_str())
+        .await
+        .unwrap();
+}
+
+pub fn run_test<T>(test: T) -> ()
+where
+    T: panic::UnwindSafe,
+    T: FnOnce(TestApp) -> Pin<Box<dyn Future<Output = ()> + 'static + Send>>,
+{
+    let result = std::panic::catch_unwind(|| {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async {
+                let (test_app, test_database_name, db_conn_string) = spawn_app().await;
+                let pool = test_app.db_pool.clone();
+
+                test(test_app).await;
+
+                pool.close().await;
+                drop_database(test_database_name, db_conn_string).await;
+            })
+    });
+
+    assert!(result.is_ok());
 }
