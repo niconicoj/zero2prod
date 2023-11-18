@@ -14,7 +14,9 @@ pub fn internal_error<E: std::error::Error + Send + Sync + 'static>(
 pub fn db_error(err: sqlx::Error) -> (StatusCode, String) {
     match err {
         sqlx::Error::Database(err) if err.is_unique_violation() => {
-            (StatusCode::CONFLICT, "Email already exists".to_string())
+            let err = err.to_string();
+            tracing::warn!("Bad request: {}", &err);
+            (StatusCode::CONFLICT, err)
         }
         _ => (
             StatusCode::INTERNAL_SERVER_ERROR,

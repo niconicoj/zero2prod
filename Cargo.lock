@@ -129,6 +129,7 @@ dependencies = [
  "tower",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
@@ -146,6 +147,7 @@ dependencies = [
  "rustversion",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
@@ -2646,6 +2648,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tokio-async-drop",
+ "tower-layer",
  "tracing",
  "tracing-attributes",
  "tracing-subscriber",
