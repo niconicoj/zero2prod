@@ -1,6 +1,4 @@
-use common::test_app::run_test;
-
-mod common;
+use zero2prod_core::testing::run_test;
 
 #[test]
 fn health_check_works() {

@@ -1,12 +1,14 @@
 use std::{future::Future, net::TcpListener, panic, pin::Pin};
 
+use crate::configuration::{Configuration, WithDb};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
-use zero2prod::configuration::{Configuration, WithDb};
 
 pub struct TestApp {
     pub app_address: String,
     pub db_pool: PgPool,
+    pub db_name: String,
+    pub db_address: String,
 }
 
 pub async fn spawn_app() -> (TestApp, String, String) {
@@ -14,8 +16,8 @@ pub async fn spawn_app() -> (TestApp, String, String) {
     let port = listener.local_addr().unwrap().port();
     let app_address = format!("http://127.0.0.1:{port}");
 
-    let mut configuration =
-        zero2prod::configuration::get_configuration().expect("Failed to read configuration");
+    let mut configuration = crate::configuration::get_configuration(Some("../configuration.yaml"))
+        .expect("Failed to read configuration");
     configuration.database.database_name = format!(
         "{}-{}",
         configuration.database.database_name,
@@ -24,13 +26,15 @@ pub async fn spawn_app() -> (TestApp, String, String) {
 
     let (test_database_name, db_pool) = configure_database(&configuration).await;
 
-    tokio::spawn(zero2prod::server(listener, db_pool.clone()));
+    tokio::spawn(crate::server(listener, db_pool.clone()));
     (
         TestApp {
             app_address,
             db_pool,
+            db_name: test_database_name.clone(),
+            db_address: configuration.database.connection_string(WithDb::No),
         },
-        test_database_name,
+        test_database_name.clone(),
         configuration.database.connection_string(WithDb::No),
     )
 }
@@ -54,7 +58,7 @@ pub async fn configure_database(configuration: &Configuration) -> (String, PgPoo
         .await
         .expect("Failed to connect to Postgres");
 
-    sqlx::migrate!("./migrations")
+    sqlx::migrate!("../migrations")
         .run(&db_pool)
         .await
         .expect("Failed to migrate database");

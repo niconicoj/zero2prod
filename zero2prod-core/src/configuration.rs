@@ -39,10 +39,10 @@ impl DatabaseConfig {
     }
 }
 
-pub fn get_configuration() -> Result<Configuration, config::ConfigError> {
+pub fn get_configuration(location: Option<&str>) -> Result<Configuration, config::ConfigError> {
     let configuration = config::Config::builder()
         .add_source(config::File::new(
-            "configuration.yaml",
+            location.unwrap_or("configuration.yaml"),
             config::FileFormat::Yaml,
         ))
         .build()?;

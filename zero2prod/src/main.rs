@@ -3,10 +3,7 @@ use std::net::TcpListener;
 use sqlx::postgres::PgPoolOptions;
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use zero2prod::{
-    configuration::{get_configuration, WithDb},
-    server,
-};
+use zero2prod_core::configuration::{get_configuration, WithDb};
 
 #[tokio::main]
 async fn main() {
@@ -17,7 +14,7 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let configuration = get_configuration().expect("Failed to read configuration.");
+    let configuration = get_configuration(None).expect("Failed to read configuration.");
     let address = format!("127.0.0.1:{}", configuration.port);
     let listener = TcpListener::bind(&address).expect("Failed to bind listener");
 
@@ -28,5 +25,6 @@ async fn main() {
         .expect("Failed to connect to database");
 
     info!("Starting server");
-    server(listener, pool).await.unwrap()
+
+    zero2prod_core::server(listener, pool).await.unwrap()
 }

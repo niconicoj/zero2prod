@@ -20,6 +20,8 @@ mod error;
 mod handlers;
 mod request_id;
 
+pub mod testing;
+
 pub type Server = axum::Server<AddrIncoming, IntoMakeService<Router>>;
 
 #[derive(Default)]

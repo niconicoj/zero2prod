@@ -1,0 +1,22 @@
+[package]
+name = "zero2prod-core"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum = { version = "0.6.20", features = ["macros", "headers", "tracing"] }
+config = "0.13.3"
+hyper = "0.14.27"
+serde = { version = "1.0.192", features = ["derive"] }
+sqlx = { version = "0.7.2", features = ["postgres", "runtime-tokio", "tls-native-tls", "macros", "uuid", "chrono", "migrate"] }
+tokio = { version = "1.33.0", features = ["full"] }
+tokio-async-drop = "0.1.0"
+tower-layer = "0.3.2"
+tracing = "0.1.40"
+tracing-attributes = "0.1.27"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+uuid = { version = "1.5.0", features = ["v4"] }
+
+

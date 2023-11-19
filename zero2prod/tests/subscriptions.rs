@@ -1,8 +1,5 @@
-use hyper::StatusCode;
-
-use crate::common::test_app::run_test;
-
-mod common;
+use reqwest::StatusCode;
+use zero2prod_core::testing::run_test;
 
 #[test]
 fn subscribe_returns_a_200_for_valid_form_data() {
