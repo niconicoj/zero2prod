@@ -1,14 +1,8 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use proc_macro::TokenStream;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod entry;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+#[proc_macro_attribute]
+pub fn integration_test(_args: TokenStream, item: TokenStream) -> TokenStream {
+    entry::integration_test(item.into()).into()
 }
