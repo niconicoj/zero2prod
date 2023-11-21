@@ -14,12 +14,13 @@ use crate::{
     request_id::RequestIdLayer,
 };
 
-pub mod configuration;
 mod db;
 mod error;
 mod handlers;
 mod request_id;
 
+pub mod configuration;
+pub mod telemetry;
 pub mod testing;
 
 pub type Server = axum::Server<AddrIncoming, IntoMakeService<Router>>;

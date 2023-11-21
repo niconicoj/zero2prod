@@ -1,8 +1,21 @@
 use std::{future::Future, net::TcpListener, panic, pin::Pin};
 
-use crate::configuration::{Configuration, WithDb};
+use crate::{
+    configuration::{Configuration, WithDb},
+    telemetry::setup_subscriber,
+};
+
+use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
+
+static TRACING: Lazy<()> = Lazy::new(|| {
+    if std::env::var("TEST_LOG").is_ok() {
+        setup_subscriber("integration-test", "debug", std::io::stdout);
+    } else {
+        setup_subscriber("integration-test", "debug", std::io::sink);
+    }
+});
 
 pub struct TestApp {
     pub app_address: String,
@@ -12,6 +25,7 @@ pub struct TestApp {
 }
 
 pub async fn spawn_app() -> (TestApp, String, String) {
+    Lazy::force(&TRACING);
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind listener");
     let port = listener.local_addr().unwrap().port();
     let app_address = format!("http://127.0.0.1:{port}");

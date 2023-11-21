@@ -2,17 +2,11 @@ use std::net::TcpListener;
 
 use sqlx::postgres::PgPoolOptions;
 use tracing::info;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use zero2prod_core::configuration::{get_configuration, WithDb};
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
+    zero2prod_core::telemetry::setup_subscriber("zero2prod", "info", std::io::stdout);
 
     let configuration = get_configuration(None).expect("Failed to read configuration.");
     let address = format!("127.0.0.1:{}", configuration.port);
