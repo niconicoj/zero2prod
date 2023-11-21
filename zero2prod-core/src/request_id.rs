@@ -64,12 +64,6 @@ pub struct RequestIdService<S> {
     inner: S,
 }
 
-impl<S> RequestIdService<S> {
-    pub fn new(inner: S) -> Self {
-        Self { inner }
-    }
-}
-
 impl<B, S> Service<Request<B>> for RequestIdService<S>
 where
     S: Service<Request<B>>,

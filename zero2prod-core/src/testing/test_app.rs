@@ -90,7 +90,7 @@ async fn drop_database(test_database_name: String, db_conn_string: String) {
         .unwrap();
 }
 
-pub fn run_test<T>(test: T) -> ()
+pub fn run_test<T>(test: T)
 where
     T: panic::UnwindSafe,
     T: FnOnce(TestApp) -> Pin<Box<dyn Future<Output = ()> + 'static + Send>>,
