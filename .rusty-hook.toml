@@ -1,5 +1,5 @@
 [hooks]
-pre-commit = "cargo clippy"
+pre-commit = "cargo clippy -- -D warnings"
 pre-push = "cargo test"
 
 [logging]
