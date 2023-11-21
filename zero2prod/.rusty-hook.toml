@@ -1,0 +1,5 @@
+[hooks]
+pre-push = ["cargo test", "cargo lint"]
+
+[logging]
+verbose = true
