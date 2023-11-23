@@ -6,6 +6,7 @@ use crate::{
 };
 
 use once_cell::sync::Lazy;
+use secrecy::{ExposeSecret, SecretString};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 
@@ -21,10 +22,10 @@ pub struct TestApp {
     pub app_address: String,
     pub db_pool: PgPool,
     pub db_name: String,
-    pub db_address: String,
+    pub db_address: SecretString,
 }
 
-pub async fn spawn_app() -> (TestApp, String, String) {
+pub async fn spawn_app() -> (TestApp, String, SecretString) {
     Lazy::force(&TRACING);
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind listener");
     let port = listener.local_addr().unwrap().port();
@@ -54,9 +55,14 @@ pub async fn spawn_app() -> (TestApp, String, String) {
 }
 
 pub async fn configure_database(configuration: &Configuration) -> (String, PgPool) {
-    let mut conn = PgConnection::connect(&configuration.database.connection_string(WithDb::No))
-        .await
-        .expect("Failed to connect to Postgres");
+    let mut conn = PgConnection::connect(
+        configuration
+            .database
+            .connection_string(WithDb::No)
+            .expose_secret(),
+    )
+    .await
+    .expect("Failed to connect to Postgres");
 
     conn.execute(
         format!(
@@ -68,9 +74,14 @@ pub async fn configure_database(configuration: &Configuration) -> (String, PgPoo
     .await
     .unwrap();
 
-    let db_pool = PgPool::connect(&configuration.database.connection_string(WithDb::Yes))
-        .await
-        .expect("Failed to connect to Postgres");
+    let db_pool = PgPool::connect(
+        configuration
+            .database
+            .connection_string(WithDb::Yes)
+            .expose_secret(),
+    )
+    .await
+    .expect("Failed to connect to Postgres");
 
     sqlx::migrate!("../migrations")
         .run(&db_pool)
@@ -80,8 +91,8 @@ pub async fn configure_database(configuration: &Configuration) -> (String, PgPoo
     (configuration.database.database_name.clone(), db_pool)
 }
 
-async fn drop_database(test_database_name: String, db_conn_string: String) {
-    let mut conn = PgConnection::connect(&db_conn_string)
+async fn drop_database(test_database_name: String, db_conn_string: SecretString) {
+    let mut conn = PgConnection::connect(db_conn_string.expose_secret())
         .await
         .expect("Failed to connect to Postgres");
 

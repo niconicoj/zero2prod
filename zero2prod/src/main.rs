@@ -1,5 +1,6 @@
 use std::net::TcpListener;
 
+use secrecy::ExposeSecret;
 use sqlx::postgres::PgPoolOptions;
 use tracing::info;
 use zero2prod_core::configuration::{get_configuration, WithDb};
@@ -18,7 +19,12 @@ async fn main() {
 
     info!("Setting up database connection pool");
     let pool = PgPoolOptions::new()
-        .connect(&configuration.database.connection_string(WithDb::Yes))
+        .connect(
+            configuration
+                .database
+                .connection_string(WithDb::Yes)
+                .expose_secret(),
+        )
         .await
         .expect("Failed to connect to database");
 
