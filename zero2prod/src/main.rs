@@ -6,7 +6,11 @@ use zero2prod_core::configuration::{get_configuration, WithDb};
 
 #[tokio::main]
 async fn main() {
-    zero2prod_core::telemetry::setup_subscriber("zero2prod", "info", std::io::stdout);
+    zero2prod_core::telemetry::setup_subscriber(
+        "zero2prod",
+        "zero2prod_core::request_id=trace,info",
+        std::io::stdout,
+    );
 
     let configuration = get_configuration(None).expect("Failed to read configuration.");
     let address = format!("127.0.0.1:{}", configuration.port);

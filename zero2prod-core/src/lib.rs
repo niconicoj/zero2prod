@@ -11,7 +11,7 @@ use tracing::info;
 
 use crate::{
     handlers::{health_check::health_check, subscriptions::subscribe},
-    request_id::RequestIdLayer,
+    request_id::TraceIdLayer,
 };
 
 mod db;
@@ -35,7 +35,7 @@ pub fn server(listener: TcpListener, pool: PgPool) -> Server {
         .route("/health_check", get(health_check))
         .route("/subscriptions", post(subscribe))
         .with_state(pool)
-        .layer(RequestIdLayer);
+        .layer(TraceIdLayer);
 
     let addr = listener
         .local_addr()

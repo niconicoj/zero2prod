@@ -26,7 +26,9 @@ fn parse_knobs(mut input: ItemFn) -> TokenStream {
 
     let body = input.body();
     let body = quote! {
-        zero2prod_core::testing::run_test(|test_app: zero2prod_core::testing::TestApp| { Box::pin(async move #body)});
+        ::zero2prod_core::testing::run_test(|test_app: ::zero2prod_core::testing::TestApp| {
+            ::std::boxed::Box::pin(async move #body)
+        });
     };
 
     input.into_tokens(header, body)

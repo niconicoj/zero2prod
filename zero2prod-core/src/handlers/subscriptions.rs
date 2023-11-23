@@ -9,7 +9,6 @@ use tracing::{info, instrument, Span};
 
 use crate::db::DatabaseConnection;
 use crate::error::{db_error, form_rejection};
-use crate::request_id::RequestId;
 
 #[derive(Deserialize)]
 pub struct SubscribeRequest {
@@ -20,7 +19,6 @@ pub struct SubscribeRequest {
 #[instrument(name = "Adding a new subscriber", skip(conn, form))]
 pub async fn subscribe(
     DatabaseConnection(mut conn): DatabaseConnection,
-    RequestId(request_id): RequestId,
     form: Result<Form<SubscribeRequest>, FormRejection>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     let form = form.map_err(form_rejection)?;

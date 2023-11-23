@@ -16,12 +16,15 @@ pub fn db_error(err: sqlx::Error) -> (StatusCode, String) {
         sqlx::Error::Database(err) if err.is_unique_violation() => {
             let err = err.to_string();
             tracing::warn!("Bad request: {}", &err);
-            (StatusCode::CONFLICT, err)
+            (StatusCode::CONFLICT, "bad request".to_string())
         }
-        _ => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Internal server error".to_string(),
-        ),
+        err => {
+            tracing::error!("Database error: {}", err);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Internal server error".to_string(),
+            )
+        }
     }
 }
 
