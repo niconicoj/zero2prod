@@ -1,6 +1,7 @@
 use config::Environment;
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
+use sqlx::postgres::{PgConnectOptions, PgSslMode};
 
 #[derive(Deserialize, Clone)]
 pub struct Configuration {
@@ -23,32 +24,31 @@ pub struct DbConfig {
     pub port: u16,
     pub name: String,
     pub timeout: Option<u64>,
+    pub ssl: bool,
 }
 
+#[derive(PartialEq, Eq)]
 pub enum WithDb {
     Yes,
     No,
 }
 
 impl DbConfig {
-    pub fn connection_string(&self, with_db: WithDb) -> SecretString {
-        match with_db {
-            WithDb::Yes => SecretString::new(format!(
-                "postgres://{}:{}@{}:{}/{}",
-                self.username,
-                self.password.expose_secret(),
-                self.host,
-                self.port,
-                self.name
-            )),
-            WithDb::No => SecretString::new(format!(
-                "postgres://{}:{}@{}:{}",
-                self.username,
-                self.password.expose_secret(),
-                self.host,
-                self.port
-            )),
+    pub fn connection_options(&self, with_db: WithDb) -> PgConnectOptions {
+        let mut options = PgConnectOptions::new()
+            .host(&self.host)
+            .username(&self.username)
+            .password(self.password.expose_secret())
+            .port(self.port)
+            .ssl_mode(match self.ssl {
+                true => PgSslMode::Require,
+                false => PgSslMode::Prefer,
+            });
+
+        if with_db == WithDb::Yes {
+            options = options.database(&self.name);
         }
+        options
     }
 }
 

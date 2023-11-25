@@ -10,7 +10,6 @@ use axum::{
 
 use configuration::Configuration;
 use hyper::server::conn::AddrIncoming;
-use secrecy::ExposeSecret;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tracing::info;
 
@@ -52,13 +51,7 @@ pub fn server(configuration: &Configuration) -> (Server, Address, PgPool) {
         .acquire_timeout(std::time::Duration::from_secs(
             configuration.db.timeout.unwrap_or(2),
         ))
-        .connect_lazy(
-            configuration
-                .db
-                .connection_string(WithDb::Yes)
-                .expose_secret(),
-        )
-        .expect("Failed to connect to database");
+        .connect_lazy_with(configuration.db.connection_options(WithDb::Yes));
 
     let app = Router::new()
         .route("/health_check", get(health_check))

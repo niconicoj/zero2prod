@@ -19,6 +19,21 @@ services:
       - key: Z2P_PROFILE
         value: production
         scope: RUN_TIME
+      - key: Z2P_DB_USERNAME
+        scope: RUN_TIME
+        value: ${stomp-db.USERNAME}
+      - key: Z2P_DB_PASSWORD
+        scope: RUN_TIME
+        value: ${stomp-db.PASSWORD}
+      - key: Z2P_DB_HOST
+        scope: RUN_TIME
+        value: ${stomp-db.HOSTNAME}
+      - key: Z2P_DB_PORT
+        scope: RUN_TIME
+        value: ${stomp-db.PORT}
+      - key: Z2P_DB_NAME
+        scope: RUN_TIME
+        value: ${stomp-db.DATABASE}
 databases:
   - engine: PG
     name: stomp-db

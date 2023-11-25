@@ -6,3 +6,4 @@ db:
   username: "postgres"
   password: "password"
   name: "stomp-db"
+  ssl: false

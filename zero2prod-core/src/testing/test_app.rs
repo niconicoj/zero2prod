@@ -8,7 +8,6 @@ use crate::{
 };
 
 use once_cell::sync::Lazy;
-use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -43,28 +42,18 @@ pub async fn spawn_app() -> TestApp {
 }
 
 pub async fn configure_database(configuration: &Configuration) -> (String, PgPool) {
-    let mut conn = PgConnection::connect(
-        configuration
-            .db
-            .connection_string(WithDb::No)
-            .expose_secret(),
-    )
-    .await
-    .expect("Failed to connect to Postgres");
+    let mut conn = PgConnection::connect_with(&configuration.db.connection_options(WithDb::No))
+        .await
+        .expect("Failed to connect to Postgres");
 
     println!("Creating database: {}", configuration.db.name);
     conn.execute(format!(r#"CREATE DATABASE "{}";"#, configuration.db.name).as_str())
         .await
         .unwrap();
 
-    let db_pool = PgPool::connect(
-        configuration
-            .db
-            .connection_string(WithDb::Yes)
-            .expose_secret(),
-    )
-    .await
-    .expect("Failed to connect to Postgres");
+    let db_pool = PgPool::connect_with(configuration.db.connection_options(WithDb::Yes))
+        .await
+        .expect("Failed to connect to Postgres");
 
     sqlx::migrate!("../migrations")
         .run(&db_pool)
@@ -76,15 +65,9 @@ pub async fn configure_database(configuration: &Configuration) -> (String, PgPoo
 
 async fn teardown_app(test_app: TestApp) {
     test_app.pool.close().await;
-    let mut conn = PgConnection::connect(
-        test_app
-            .config
-            .db
-            .connection_string(WithDb::No)
-            .expose_secret(),
-    )
-    .await
-    .expect("Failed to connect to Postgres");
+    let mut conn = PgConnection::connect_with(&test_app.config.db.connection_options(WithDb::No))
+        .await
+        .expect("Failed to connect to Postgres");
 
     conn.execute(
         format!(
