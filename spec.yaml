@@ -18,4 +18,5 @@ services:
     envs:
       - key: Z2P_PROFILE
         value: production
+        scope: RUN_TIME
 
