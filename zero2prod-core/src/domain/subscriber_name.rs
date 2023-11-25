@@ -1,15 +1,8 @@
 use std::fmt;
 
-use email_address::EmailAddress;
 use serde::{de::Visitor, Deserialize};
 
 static FORBIDDEN_CHARS: [char; 9] = ['/', '(', ')', '"', '<', '>', '\\', '{', '}'];
-
-#[derive(Deserialize)]
-pub struct SubscribeRequest {
-    pub name: SubscriberName,
-    pub email: EmailAddress,
-}
 
 pub struct SubscriberName(String);
 
@@ -28,7 +21,7 @@ impl<'de> Deserialize<'de> for SubscriberName {
     }
 }
 
-pub struct SubscriberNameVisitor;
+struct SubscriberNameVisitor;
 
 impl<'de> Visitor<'de> for SubscriberNameVisitor {
     type Value = SubscriberName;
@@ -80,12 +73,5 @@ mod tests {
         let input = r#""""#;
         let actual: Result<SubscriberName, _> = serde_json::from_str(input);
         assert!(actual.is_err());
-    }
-
-    #[test]
-    fn deserialize_valid_email() {
-        let input = r#""giovanni@localhost""#;
-        let actual: EmailAddress = serde_json::from_str(input).unwrap();
-        assert_eq!(actual.as_str(), "giovanni@localhost");
     }
 }
