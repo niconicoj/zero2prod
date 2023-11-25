@@ -49,6 +49,9 @@ pub fn server(configuration: &Configuration) -> (Server, Address, PgPool) {
 
     info!("Setting up database connection pool");
     let pool = PgPoolOptions::new()
+        .acquire_timeout(std::time::Duration::from_secs(
+            configuration.db.timeout.unwrap_or(2),
+        ))
         .connect_lazy(
             configuration
                 .db

@@ -12,8 +12,7 @@ async fn main() {
     let configuration = get_configuration().expect("Failed to read configuration.");
     info!("Active profile : {}", configuration.profile);
 
-    let (server, address, _) = zero2prod_core::server(&configuration);
+    let (server, _, _) = zero2prod_core::server(&configuration);
 
-    info!("Listening on {}", address);
     server.await.unwrap();
 }
