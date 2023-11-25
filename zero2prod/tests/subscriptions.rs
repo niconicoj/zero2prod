@@ -33,6 +33,7 @@ fn subscribe_returns_a_400_for_invalid_form_data() {
         ("name=John%20Doe", "missing the email"),
         ("email=john.doe@gmail.com", "missing the name"),
         ("", "empty"),
+        ("name=John%20Doe&email=hello.world", "invalid email"),
     ];
 
     for (body, error) in test_cases {

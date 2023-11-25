@@ -20,6 +20,7 @@ use crate::{
 };
 
 mod db;
+mod domain;
 mod error;
 mod handlers;
 mod request_id;

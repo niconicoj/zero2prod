@@ -1,6 +1,5 @@
 use axum::{extract::rejection::FormRejection, Form};
 use hyper::StatusCode;
-use serde::Deserialize;
 
 use sqlx::types::chrono::Utc;
 use sqlx::types::Uuid;
@@ -8,13 +7,8 @@ use sqlx::types::Uuid;
 use tracing::{info, instrument, Span};
 
 use crate::db::DatabaseConnection;
+use crate::domain::SubscribeRequest;
 use crate::error::{db_error, form_rejection};
-
-#[derive(Deserialize)]
-pub struct SubscribeRequest {
-    name: String,
-    email: String,
-}
 
 #[instrument(name = "Adding a new subscriber", skip(conn, form))]
 pub async fn subscribe(
@@ -24,8 +18,8 @@ pub async fn subscribe(
     let form = form.map_err(form_rejection)?;
 
     Span::current()
-        .record("subscriber_email", &form.email)
-        .record("subscriber_name", &form.name);
+        .record("subscriber_email", form.email.as_ref())
+        .record("subscriber_name", form.name.as_ref());
 
     info!("Adding a new subscriber : {}", form.email);
     sqlx::query!(
@@ -34,8 +28,8 @@ pub async fn subscribe(
             VALUES ($1, $2, $3, $4)
         "#,
         Uuid::new_v4(),
-        form.email,
-        form.name,
+        form.email.as_ref(),
+        form.name.as_ref(),
         Utc::now()
     )
     .execute(&mut *conn)
