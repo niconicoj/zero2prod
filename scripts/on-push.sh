@@ -12,6 +12,7 @@ if ! command_exists sqlx; then
 fi
 
 # Check if sqlx.json is valid
+echo "Checking the sqlx.json..."
 if ! cargo sqlx prepare --workspace --check; then
     exit 1
 fi
