@@ -25,7 +25,7 @@ jobs:
 
     - name: Lint
       run: |
-        cargo fmt -- --check
+        SQLX_OFFLINE=true cargo fmt -- --check
         cargo clippy -- -D warnings
 
     - name: Test
