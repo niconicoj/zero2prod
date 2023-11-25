@@ -1,24 +1,22 @@
-FROM alpine:3 as builder
-
-WORKDIR /usr/src/zero2prod
-
-# Install dependencies
-RUN apk add --no-cache gcc musl-dev pkgconfig openssl-dev
-RUN apk add --no-cache rust cargo
-COPY . .
-ENV SQLX_OFFLINE true
-RUN cargo install --path ./zero2prod
-
-FROM alpine:3 as runtime
-
+FROM clux/muslrust:stable as chef
+USER root
+RUN cargo install cargo-chef
 WORKDIR /app
 
-RUN apk update
-RUN apk add --no-cache gcc openssl-dev
-COPY --from=builder /root/.cargo/bin/zero2prod /usr/local/bin/zero2prod
-COPY --from=builder /usr/src/zero2prod/configuration.yaml configuration.yaml
-COPY --from=builder /usr/src/zero2prod/configuration configuration
+FROM chef as planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
 
-EXPOSE 8000
+FROM chef as builder
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --target x86_64-unknown-linux-musl --recipe-path recipe.json
+COPY . .
+ENV SQLX_OFFLINE true
+RUN cargo build --release --target x86_64-unknown-linux-musl
 
-CMD ["zero2prod"]
+FROM alpine as runtime
+RUN addgroup -S zero2prod && adduser -S zero2prod -G zero2prod
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/zero2prod /usr/local/bin/
+COPY --from=builder /app/configuration configuration
+USER zero2prod
+CMD ["/usr/local/bin/zero2prod"]
