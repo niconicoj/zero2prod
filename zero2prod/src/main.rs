@@ -1,9 +1,5 @@
-use std::net::TcpListener;
-
-use secrecy::ExposeSecret;
-use sqlx::postgres::PgPoolOptions;
 use tracing::info;
-use zero2prod_core::configuration::{get_configuration, WithDb};
+use zero2prod_core::configuration::get_configuration;
 
 #[tokio::main]
 async fn main() {
@@ -13,22 +9,10 @@ async fn main() {
         std::io::stdout,
     );
 
-    let configuration = get_configuration(None).expect("Failed to read configuration.");
-    let address = format!("127.0.0.1:{}", configuration.port);
-    let listener = TcpListener::bind(&address).expect("Failed to bind listener");
+    let configuration = get_configuration().expect("Failed to read configuration.");
+    info!("Active profile : {}", configuration.profile);
 
-    info!("Setting up database connection pool");
-    let pool = PgPoolOptions::new()
-        .connect(
-            configuration
-                .database
-                .connection_string(WithDb::Yes)
-                .expose_secret(),
-        )
-        .await
-        .expect("Failed to connect to database");
+    let (server, _, _) = zero2prod_core::server(&configuration);
 
-    info!("Starting server");
-
-    zero2prod_core::server(listener, pool).await.unwrap()
+    server.await.unwrap();
 }

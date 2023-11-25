@@ -1,19 +1,28 @@
+use config::Environment;
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Configuration {
-    pub database: DatabaseConfig,
+    pub profile: String,
+    pub app: AppConfig,
+    pub db: DbConfig,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct AppConfig {
+    pub host: String,
     pub port: u16,
 }
 
-#[derive(Deserialize)]
-pub struct DatabaseConfig {
+#[derive(Deserialize, Clone)]
+pub struct DbConfig {
     pub username: String,
     pub password: SecretString,
     pub host: String,
     pub port: u16,
-    pub database_name: String,
+    pub name: String,
+    pub timeout: Option<u64>,
 }
 
 pub enum WithDb {
@@ -21,7 +30,7 @@ pub enum WithDb {
     No,
 }
 
-impl DatabaseConfig {
+impl DbConfig {
     pub fn connection_string(&self, with_db: WithDb) -> SecretString {
         match with_db {
             WithDb::Yes => SecretString::new(format!(
@@ -30,7 +39,7 @@ impl DatabaseConfig {
                 self.password.expose_secret(),
                 self.host,
                 self.port,
-                self.database_name
+                self.name
             )),
             WithDb::No => SecretString::new(format!(
                 "postgres://{}:{}@{}:{}",
@@ -43,13 +52,48 @@ impl DatabaseConfig {
     }
 }
 
-pub fn get_configuration(location: Option<&str>) -> Result<Configuration, config::ConfigError> {
-    let configuration = config::Config::builder()
-        .add_source(config::File::new(
-            location.unwrap_or("configuration.yaml"),
-            config::FileFormat::Yaml,
-        ))
-        .build()?;
+pub fn get_test_configuration() -> Result<Configuration, config::ConfigError> {
+    let mut configuration = get_configuration_with_profile("test".into(), "../configuration")?;
+    configuration.db.name = format!("{}-{}", configuration.db.name, uuid::Uuid::new_v4());
+    Ok(configuration)
+}
 
+pub fn get_configuration() -> Result<Configuration, config::ConfigError> {
+    // Detect profile to use
+    let app_profile = std::env::var("Z2P_PROFILE").unwrap_or_else(|_| "local".into());
+
+    let mut configuration = get_configuration_with_profile(app_profile, "configuration")?;
+    configuration.db.name = format!("{}-{}", configuration.db.name, uuid::Uuid::new_v4());
+    Ok(configuration)
+}
+
+fn get_configuration_with_profile(
+    app_profile: String,
+    config_dir: &str,
+) -> Result<Configuration, config::ConfigError> {
+    let base_path = std::env::current_dir().expect("Failed to determine current directory");
+    let config_dir = base_path.join(config_dir);
+
+    // Start off by merging in the "base" configuration file
+    let mut builder = config::Config::builder();
+    builder = builder.add_source(config::File::from(config_dir.join("base.yaml")));
+
+    let profiles: Vec<_> = app_profile
+        .split(',')
+        .map(|s| format!("{}.yaml", s))
+        .collect();
+
+    for profile in profiles {
+        builder = builder.add_source(config::File::from(config_dir.join(profile)).required(false));
+    }
+
+    builder = builder.add_source(
+        Environment::with_prefix("Z2P")
+            .try_parsing(true)
+            .separator("_"),
+    );
+    builder = builder.set_override("profile", app_profile)?;
+
+    let configuration = builder.build()?;
     configuration.try_deserialize::<Configuration>()
 }
