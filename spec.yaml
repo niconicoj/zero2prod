@@ -19,4 +19,9 @@ services:
       - key: Z2P_PROFILE
         value: production
         scope: RUN_TIME
-
+databases:
+  - engine: PG
+    name: stomp-db
+    num_nodes: 1
+    size: db-s-dev-database
+    version: "12"

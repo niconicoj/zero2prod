@@ -18,7 +18,7 @@ set -eo pipefail
 
 DB_USER=${POSTGRES_USER:=postgres}
 DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
-DB_NAME="${POSTGRES_DB:=stomp_db}"
+DB_NAME="${POSTGRES_DB:=stomp-db}"
 DB_PORT="${POSTGRES_PORT:=5432}"
 DB_HOST="${POSTGRES_HOST:=localhost}"
 
@@ -34,12 +34,13 @@ then
 
   export PGPASSWORD="${DB_PASSWORD}"
 
-  until psql -h "${DB_HOST}" -U "${DB_USER}" -d "${DB_NAME}" -c '\q'; do
+  # Keep pinging Postgres until it's ready to accept commands
+  until PGPASSWORD="${DB_PASSWORD}" psql -h "${DB_HOST}" -U "${DB_USER}" -p "${DB_PORT}" -d "postgres" -c '\q' >/dev/null 2>&1; do
     >&2 echo "Postgres is still unavailable - sleeping"
     sleep 1
-
-    >&2 echo "Postgres is up and running on port ${DB_PORT}"
   done
+
+  >&2 echo "Postgres is up and running on port ${DB_PORT} - running migrations now!"
 fi
 
 DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
