@@ -17,8 +17,8 @@ services:
       - path: /
     envs:
       - key: Z2P_PROFILE
-        value: production
         scope: RUN_TIME
+        value: production
       - key: Z2P_DB_USERNAME
         scope: RUN_TIME
         value: ${stomp-db.USERNAME}

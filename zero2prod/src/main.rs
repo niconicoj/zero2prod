@@ -12,7 +12,12 @@ async fn main() {
     let configuration = get_configuration().expect("Failed to read configuration.");
     info!("Active profile : {}", configuration.profile);
 
-    let (server, _, _) = zero2prod_core::server(&configuration);
+    let (server, _, pool) = zero2prod_core::server(&configuration);
+
+    sqlx::migrate!("../migrations")
+        .run(&pool)
+        .await
+        .expect("Failed to migrate database.");
 
     server.await.unwrap();
 }
