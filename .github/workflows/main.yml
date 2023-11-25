@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 env:
   CARGO_TERM_COLOR: always
+  SQLX_OFFLINE: true
 
 jobs:
   build:
@@ -25,7 +26,7 @@ jobs:
 
     - name: Lint
       run: |
-        SQLX_OFFLINE=true cargo fmt -- --check
+        cargo fmt -- --check
         cargo clippy -- -D warnings
 
     - name: Test
