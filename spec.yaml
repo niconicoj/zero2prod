@@ -15,4 +15,7 @@ services:
     instance_size_slug: basic-xxs
     routes:
       - path: /
+    envs:
+      - key: Z2P_PROFILE
+        value: production
 
