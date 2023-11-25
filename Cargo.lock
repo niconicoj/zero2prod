@@ -388,6 +388,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "deunicode"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a1abaf4d861455be59f64fd2b55606cb151fce304ede7165f410243ce96bde6"
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -439,6 +445,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "env_logger"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a19187fea3ac7e84da7dacf48de0c45d63c6a76f9490dae389aead16c243fce3"
+dependencies = [
+ "log",
+ "regex",
+]
+
+[[package]]
 name = "envmnt"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -480,6 +496,16 @@ name = "event-listener"
 version = "2.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
+
+[[package]]
+name = "fake"
+version = "2.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26221445034074d46b276e13eb97a265ebdb8ed8da705c4dddd3dd20b66b45d2"
+dependencies = [
+ "deunicode",
+ "rand",
+]
 
 [[package]]
 name = "fastrand"
@@ -880,12 +906,6 @@ dependencies = [
  "unicode-bidi",
  "unicode-normalization",
 ]
-
-[[package]]
-name = "if_chain"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb56e1aa765b4b4f3aadfab769793b7087bb03a4ea4920644a6d238e2df5b9ed"
 
 [[package]]
 name = "indexmap"
@@ -1415,36 +1435,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
-name = "proc-macro-error"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
-dependencies = [
- "proc-macro-error-attr",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
- "version_check",
-]
-
-[[package]]
-name = "proc-macro-error-attr"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
-dependencies = [
- "proc-macro2",
- "quote",
- "version_check",
-]
-
-[[package]]
 name = "proc-macro2"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "134c189feb4956b20f6f547d2cf727d4c0fe06722b20a0eec87ed445a97f92da"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "quickcheck"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "588f6378e4dd99458b60ec275b4477add41ce4fa9f64dcba6f15adccb19b50d6"
+dependencies = [
+ "env_logger",
+ "log",
+ "rand",
+]
+
+[[package]]
+name = "quickcheck_macros"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b22a693222d716a9587786f37ac3f6b4faedb5b80c23914e7303ff5a1d8016e9"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2511,48 +2529,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "validator"
-version = "0.16.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b92f40481c04ff1f4f61f304d61793c7b56ff76ac1469f1beb199b1445b253bd"
-dependencies = [
- "idna",
- "lazy_static",
- "regex",
- "serde",
- "serde_derive",
- "serde_json",
- "url",
- "validator_derive",
-]
-
-[[package]]
-name = "validator_derive"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc44ca3088bb3ba384d9aecf40c6a23a676ce23e09bdaca2073d99c207f864af"
-dependencies = [
- "if_chain",
- "lazy_static",
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "regex",
- "syn 1.0.109",
- "validator_types",
-]
-
-[[package]]
-name = "validator_types"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "111abfe30072511849c5910134e8baf8dc05de4c0e5903d681cbd5c9c4d611e3"
-dependencies = [
- "proc-macro2",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "valuable"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2807,8 +2783,11 @@ dependencies = [
  "axum",
  "config",
  "email_address",
+ "fake",
  "hyper",
  "once_cell",
+ "quickcheck",
+ "quickcheck_macros",
  "secrecy",
  "serde",
  "serde_json",
@@ -2820,7 +2799,6 @@ dependencies = [
  "tracing-bunyan-formatter",
  "tracing-subscriber",
  "uuid",
- "validator",
 ]
 
 [[package]]
