@@ -61,10 +61,7 @@ pub fn get_test_configuration() -> Result<Configuration, config::ConfigError> {
 pub fn get_configuration() -> Result<Configuration, config::ConfigError> {
     // Detect profile to use
     let app_profile = std::env::var("Z2P_PROFILE").unwrap_or_else(|_| "local".into());
-
-    let mut configuration = get_configuration_with_profile(app_profile, "configuration")?;
-    configuration.db.name = format!("{}-{}", configuration.db.name, uuid::Uuid::new_v4());
-    Ok(configuration)
+    get_configuration_with_profile(app_profile, "configuration")
 }
 
 fn get_configuration_with_profile(
