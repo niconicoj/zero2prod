@@ -1,12 +1,17 @@
 name: Rust
 
-on: [push, pull_request]
+on: 
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [ opened, synchronize, reopened ]
 
 env:
   CARGO_TERM_COLOR: always
-  SQLX_OFFLINE: true
   SQLX_VERSION: 0.7.2
   SQLX_FEATURES: native-tls,postgres
+  DATABASE_URL: postgres://postgres:password@localhost:5432/stomp-db
 
 jobs:
   test:
@@ -39,8 +44,8 @@ jobs:
     - name: Migrate database
       run: |
         sudo apt-get install libpq-dev -y
-        SKIP_DOCKER=true ./init-db.sh
-    - name: Check sqlx-data.json
+        SKIP_DOCKER=true ./init_db.sh
+    - name: Validate .sqlx
       run: cargo sqlx prepare --workspace --check
     - name: Run tests
       run: cargo test --all
