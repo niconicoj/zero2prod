@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-#
+#!/bin/sh
 
 if ! [ -x "$(command -v psql)" ]; then
   echo 'Error: psql is not installed.' >&2

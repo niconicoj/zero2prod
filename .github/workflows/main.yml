@@ -45,6 +45,7 @@ jobs:
       run: |
         sudo apt-get install libpq-dev -y
         SKIP_DOCKER=true ./init_db.sh
+        echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_ENV
     - name: Run tests
       run: |
         cargo sqlx prepare --workspace --check
