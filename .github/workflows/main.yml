@@ -39,7 +39,7 @@ jobs:
     - name: Migrate database
       run: |
         sudo apt-get install libpq-dev -y
-        SKIP_DOCKER=true ./init-db.sh
+        SKIP_DOCKER=true ./init_db.sh
     - name: Check sqlx-data.json
       run: cargo sqlx prepare --workspace --check
     - name: Run tests
