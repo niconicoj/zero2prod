@@ -41,12 +41,9 @@ jobs:
         --features ${{ env.SQLX_FEATURES }}
         --no-default-features
         --locked
-    - name: Migrate database
+    - name: Run tests
       run: |
         sudo apt-get install libpq-dev -y
         SKIP_DOCKER=true ./init_db.sh
-        echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_ENV
-    - name: Run tests
-      run: |
         cargo sqlx prepare --workspace --check
         cargo test --all
