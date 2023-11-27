@@ -1,9 +1,10 @@
 use std::fmt;
 
-use serde::{de::Visitor, Deserialize};
+use serde::{de::Visitor, Deserialize, Serialize};
 
 static FORBIDDEN_CHARS: [char; 9] = ['/', '(', ')', '"', '<', '>', '\\', '{', '}'];
 
+#[derive(Serialize)]
 pub struct SubscriberName(String);
 
 impl AsRef<str> for SubscriberName {

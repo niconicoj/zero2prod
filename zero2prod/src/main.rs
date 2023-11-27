@@ -1,5 +1,5 @@
 use tracing::info;
-use zero2prod_core::configuration::get_configuration;
+use zero2prod_core::{configuration::get_configuration, server};
 
 #[tokio::main]
 async fn main() {
@@ -12,7 +12,7 @@ async fn main() {
     let configuration = get_configuration().expect("Failed to read configuration.");
     info!("Active profile : {}", configuration.profile);
 
-    let (server, _, pool) = zero2prod_core::server(&configuration);
+    let (server, _, pool) = server::start(&configuration).await;
 
     sqlx::migrate!("../migrations")
         .run(&pool)

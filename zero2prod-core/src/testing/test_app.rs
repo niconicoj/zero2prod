@@ -2,9 +2,8 @@ use std::{future::Future, panic, pin::Pin};
 
 use crate::{
     configuration::{self, Configuration, WithDb},
-    server,
+    server::{self, Address},
     telemetry::setup_subscriber,
-    Address,
 };
 
 use once_cell::sync::Lazy;
@@ -30,10 +29,10 @@ pub async fn spawn_app() -> TestApp {
 
     let config = configuration::get_test_configuration().expect("Failed to read configuration");
 
-    let (server, address, pool) = server(&config);
+    let (server, address, pool) = server::start(&config).await;
     configure_database(&config).await;
 
-    tokio::spawn(server);
+    tokio::spawn(async { server.await.unwrap() });
     TestApp {
         config,
         address,

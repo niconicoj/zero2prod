@@ -1,13 +1,18 @@
 use config::Environment;
+use email_address::EmailAddress;
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
+
+const DB_DEFAULT_TIMEOUT: u64 = 5000;
+const EMAIL_CLIENT_DEFAULT_TIMEOUT: u64 = 10000;
 
 #[derive(Deserialize, Clone)]
 pub struct Configuration {
     pub profile: String,
     pub app: AppConfig,
     pub db: DbConfig,
+    pub email_client: EmailClientConfig,
 }
 
 #[derive(Deserialize, Clone)]
@@ -23,8 +28,16 @@ pub struct DbConfig {
     pub host: String,
     pub port: u16,
     pub name: String,
-    pub timeout: Option<u64>,
+    pub timeout: u64,
     pub ssl: bool,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct EmailClientConfig {
+    pub base_url: String,
+    pub sender_email: EmailAddress,
+    pub auth_token: SecretString,
+    pub timeout: u64,
 }
 
 #[derive(PartialEq, Eq)]
@@ -89,7 +102,10 @@ fn get_configuration_with_profile(
             .try_parsing(true)
             .separator("_"),
     );
-    builder = builder.set_override("profile", app_profile)?;
+    builder = builder
+        .set_default("db.timeout", DB_DEFAULT_TIMEOUT)?
+        .set_default("email_client.timeout", EMAIL_CLIENT_DEFAULT_TIMEOUT)?
+        .set_override("profile", app_profile)?;
 
     let configuration = builder.build()?;
     configuration.try_deserialize::<Configuration>()

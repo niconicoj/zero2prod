@@ -124,3 +124,49 @@ fn token_stream_with_error(mut tokens: TokenStream, error: syn::Error) -> TokenS
     tokens.extend(error.into_compile_error());
     tokens
 }
+
+#[cfg(test)]
+mod tests {
+
+    use quote::quote;
+
+    #[test]
+    fn integration_test_expand_as_expected() {
+        let source = quote! {
+            async fn my_test() {
+                assert_eq!(2 + 2, 4);
+            }
+        };
+
+        let output = super::integration_test(source.into());
+
+        let expected = quote! {
+            #[::core::prelude::v1::test]
+            fn my_test() {
+            ::zero2prod_core::testing::run_test(|test_app: ::zero2prod_core::testing::TestApp| {
+                ::std::boxed::Box::pin(async move {
+                    assert_eq!(2 + 2, 4);
+                })
+            });
+            }
+        };
+
+        assert_eq!(output.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn integration_test_returns_token_on_error() {
+        let source = quote! {
+            struct MyStruct;
+        };
+
+        let output = super::integration_test(source.into());
+
+        let expected = quote! {
+            struct MyStruct;
+            compile_error!{"expected `fn`"}
+        };
+
+        assert_eq!(output.to_string(), expected.to_string());
+    }
+}
