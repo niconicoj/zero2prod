@@ -3132,6 +3132,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
+ "tower",
  "tower-layer",
  "tracing",
  "tracing-attributes",

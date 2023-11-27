@@ -1,13 +1,15 @@
-use std::{error::Error, fmt::Display, sync::Arc};
+use std::{
+    fmt::Display,
+    sync::Arc,
+    task::{Context, Poll},
+};
 
-use axum::{async_trait, body::Body, extract::FromRequestParts};
-use http::{Request, StatusCode};
-use hyper::{http::request::Parts, service::Service};
+use axum::body::Body;
+use http::Request;
+use tower::Service;
 use tower_layer::Layer;
 use tracing::{instrument::Instrumented, trace_span, Instrument};
 use uuid::Uuid;
-
-use crate::error::internal_error;
 
 #[derive(Clone, Debug)]
 pub struct TraceId(pub Arc<Uuid>);
@@ -37,7 +39,11 @@ where
     type Error = S::Error;
     type Future = Instrumented<S::Future>;
 
-    fn call(&self, mut req: Request<Body>) -> Self::Future {
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, mut req: Request<Body>) -> Self::Future {
         let trace_id = TraceId::generate();
         let span = trace_span!("request", trace_id = trace_id.to_string());
         req.extensions_mut().insert(trace_id);
