@@ -1,9 +1,9 @@
 use email_address::EmailAddress;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use super::SubscriberName;
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct NewSubscriber {
     pub name: SubscriberName,
     pub email: EmailAddress,

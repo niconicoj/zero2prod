@@ -2,3 +2,6 @@ app:
   host: 0.0.0.0
 db: 
   ssl: true
+email_client:
+  base_url: "https://api.postmarkapp.com"
+  sender_email: "contact@niconico.io"

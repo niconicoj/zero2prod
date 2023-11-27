@@ -7,3 +7,7 @@ db:
   password: "password"
   name: "stomp-db"
   ssl: false
+email_client:
+  base_url: "localhost"
+  sender_email: "test@gmail.com"
+  auth_token: "my-secret-token"
