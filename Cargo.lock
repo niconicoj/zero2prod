@@ -3110,8 +3110,18 @@ dependencies = [
  "tracing",
  "tracing-bunyan-formatter",
  "tracing-subscriber",
+ "wiremock",
  "zero2prod-core",
  "zero2prod-macros",
+]
+
+[[package]]
+name = "zero2prod-client"
+version = "0.1.0"
+dependencies = [
+ "email_address",
+ "reqwest",
+ "zero2prod-core",
 ]
 
 [[package]]

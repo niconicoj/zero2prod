@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use axum::Extension;
 use axum::{extract::rejection::FormRejection, Form};
 use hyper::StatusCode;
 
@@ -8,11 +11,13 @@ use tracing::{info, instrument, Span};
 
 use crate::db::DatabaseConnection;
 use crate::domain::NewSubscriber;
-use crate::error::{db_error, form_rejection};
+use crate::email::client::EmailClient;
+use crate::error::{db_error, form_rejection, internal_error};
 
-#[instrument(name = "Adding a new subscriber", skip(conn, form))]
+#[instrument(name = "Adding a new subscriber", skip_all)]
 pub async fn subscribe(
     DatabaseConnection(mut conn): DatabaseConnection,
+    Extension(email_client): Extension<Arc<EmailClient>>,
     form: Result<Form<NewSubscriber>, FormRejection>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     let form = form.map_err(form_rejection)?;
@@ -35,5 +40,12 @@ pub async fn subscribe(
     .execute(&mut *conn)
     .await
     .map_err(db_error)?;
+
+    info!("Sending confirmation email to {}", form.email);
+    email_client
+        .send_email(&form.email, "Hello", "<p>Hello world</p>", "")
+        .await
+        .map_err(internal_error)?;
+
     Ok(StatusCode::OK)
 }

@@ -16,4 +16,5 @@ zero2prod-core = { path = "../zero2prod-core" }
 [dev-dependencies]
 reqwest = "0.11.22"
 rusty-hook = "0.11.2"
+wiremock = "0.5.21"
 zero2prod-macros = { path = "../zero2prod-macros" }

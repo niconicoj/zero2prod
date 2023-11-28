@@ -1,12 +1,19 @@
-use std::fmt::{self, Display, Formatter};
-
-use axum::{
-    routing::{get, post, IntoMakeService},
-    serve::Serve,
-    Router,
+use std::{
+    fmt::{self, Display, Formatter},
+    sync::Arc,
 };
 
-use crate::{configuration::Configuration, email};
+use axum::{
+    extract::FromRef,
+    routing::{get, post, IntoMakeService},
+    serve::Serve,
+    Extension, Router,
+};
+
+use crate::{
+    configuration::Configuration,
+    email::{self, client::EmailClient},
+};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tracing::info;
 
@@ -32,6 +39,23 @@ impl Display for Address {
     }
 }
 
+pub struct AppState {
+    pool: PgPool,
+    email_client: EmailClient,
+}
+
+impl FromRef<AppState> for PgPool {
+    fn from_ref(state: &AppState) -> Self {
+        state.pool.clone()
+    }
+}
+
+impl FromRef<AppState> for EmailClient {
+    fn from_ref(state: &AppState) -> Self {
+        state.email_client.clone()
+    }
+}
+
 pub async fn start(configuration: &Configuration) -> (Server, Address, PgPool) {
     let address = format!("{}:{}", configuration.app.host, configuration.app.port);
     let listener = TcpListener::bind(address)
@@ -43,13 +67,15 @@ pub async fn start(configuration: &Configuration) -> (Server, Address, PgPool) {
         .acquire_timeout(std::time::Duration::from_millis(configuration.db.timeout))
         .connect_lazy_with(configuration.db.connection_options(WithDb::Yes));
 
-    let email_client = email::client::EmailClient::from_config(&configuration.email_client);
+    let email_client = Arc::new(email::client::EmailClient::from_config(
+        &configuration.email_client,
+    ));
 
     let app = Router::new()
         .route("/health_check", get(health_check))
         .route("/subscriptions", post(subscribe))
         .with_state(pool.clone())
-        .with_state(email_client.clone())
+        .layer(Extension(email_client))
         .layer(TraceIdLayer);
 
     let app_address = Address {

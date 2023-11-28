@@ -8,6 +8,7 @@ use crate::{
 
 use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
+use wiremock::MockServer;
 
 static TRACING: Lazy<()> = Lazy::new(|| {
     if std::env::var("TEST_LOG").is_ok() {
@@ -17,6 +18,11 @@ static TRACING: Lazy<()> = Lazy::new(|| {
     }
 });
 
+pub struct TestStack {
+    pub app: TestApp,
+    pub email_server: MockServer,
+}
+
 #[derive(Clone)]
 pub struct TestApp {
     pub config: Configuration,
@@ -24,20 +30,26 @@ pub struct TestApp {
     pub pool: PgPool,
 }
 
-pub async fn spawn_app() -> TestApp {
+pub async fn spawn_app() -> (TestApp, MockServer) {
     Lazy::force(&TRACING);
 
-    let config = configuration::get_test_configuration().expect("Failed to read configuration");
+    let email_server = MockServer::start().await;
+
+    let mut config = configuration::get_test_configuration().expect("Failed to read configuration");
+    config.email_client.base_url = email_server.uri();
 
     let (server, address, pool) = server::start(&config).await;
     configure_database(&config).await;
 
     tokio::spawn(async { server.await.unwrap() });
-    TestApp {
-        config,
-        address,
-        pool,
-    }
+    (
+        TestApp {
+            config,
+            address,
+            pool,
+        },
+        email_server,
+    )
 }
 
 pub async fn configure_database(configuration: &Configuration) -> (String, PgPool) {
@@ -90,7 +102,7 @@ async fn teardown_app(test_app: TestApp) {
 pub fn run_test<T>(test: T)
 where
     T: panic::UnwindSafe,
-    T: FnOnce(TestApp) -> Pin<Box<dyn Future<Output = ()> + 'static + Send>>,
+    T: FnOnce(TestStack) -> Pin<Box<dyn Future<Output = ()> + 'static + Send>>,
 {
     let result = std::panic::catch_unwind(|| {
         tokio::runtime::Builder::new_current_thread()
@@ -98,9 +110,13 @@ where
             .build()
             .unwrap()
             .block_on(async {
-                let test_app = spawn_app().await;
+                let (test_app, email_server) = spawn_app().await;
 
-                test(test_app.clone()).await;
+                test(TestStack {
+                    app: test_app.clone(),
+                    email_server,
+                })
+                .await;
 
                 teardown_app(test_app).await;
             })
