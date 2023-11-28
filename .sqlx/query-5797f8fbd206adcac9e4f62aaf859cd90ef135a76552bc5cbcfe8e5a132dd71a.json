@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO subscriptions (id, email, name, subscribed_at, status) \n            VALUES ($1, $2, $3, $4, 'confirmed')\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5797f8fbd206adcac9e4f62aaf859cd90ef135a76552bc5cbcfe8e5a132dd71a"
+}
