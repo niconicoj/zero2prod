@@ -3,6 +3,7 @@ mod email;
 mod error;
 mod handlers;
 mod request_id;
+mod templates;
 
 pub mod configuration;
 pub mod domain;

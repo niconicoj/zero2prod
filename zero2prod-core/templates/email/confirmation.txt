@@ -1,0 +1,3 @@
+Welcome to zero2prod!
+Before you can start using the application, you need to confirm your email address.
+In order to proceed please visit the following URL: {{link}}

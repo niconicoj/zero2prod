@@ -58,6 +58,22 @@ fn subscribe_sends_a_confirmation_email_for_valid_data(test_stack: TestStack) {
         .expect("Failed to execute request");
 
     assert_eq!(response.status(), StatusCode::OK);
+
+    let email_request = test_stack
+        .email_server
+        .received_requests()
+        .await
+        .unwrap()
+        .pop()
+        .unwrap();
+
+    let body: serde_json::Value = email_request.body_json().unwrap();
+    let expected_link = &format!(
+        "http://{}:{}/subscriptions/confirm",
+        test_stack.app.config.app.host, test_stack.app.config.app.port
+    );
+    println!("Could not find {} in {}", expected_link, body);
+    assert!(body.to_string().contains(expected_link));
 }
 
 #[integration_test]

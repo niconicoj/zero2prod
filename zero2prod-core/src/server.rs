@@ -3,16 +3,16 @@ use std::{
     sync::Arc,
 };
 
+use crate::{
+    configuration::Configuration,
+    email::{self, client::EmailClient},
+    templates,
+};
 use axum::{
     extract::FromRef,
     routing::{get, post, IntoMakeService},
     serve::Serve,
     Extension, Router,
-};
-
-use crate::{
-    configuration::Configuration,
-    email::{self, client::EmailClient},
 };
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tracing::info;
@@ -71,11 +71,15 @@ pub async fn start(configuration: &Configuration) -> (Server, Address, PgPool) {
         &configuration.email_client,
     ));
 
+    let template_engine = templates::TemplateEngine::init();
+
     let app = Router::new()
         .route("/health_check", get(health_check))
         .route("/subscriptions", post(subscribe))
         .with_state(pool.clone())
         .layer(Extension(email_client))
+        .layer(Extension(Arc::new(configuration.clone())))
+        .layer(Extension(template_engine))
         .layer(TraceIdLayer);
 
     let app_address = Address {

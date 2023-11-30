@@ -2,6 +2,7 @@ use email_address::EmailAddress;
 use reqwest::Client;
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 #[derive(Clone)]
 pub struct EmailClient {
@@ -41,6 +42,8 @@ impl EmailClient {
             text_body: text,
         };
 
+        info!("Sending email, {}", url);
+
         let _ = self
             .http_client
             .post(&url)
@@ -55,6 +58,7 @@ impl EmailClient {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[derive(Debug)]
 struct SendEmailRequest<'a> {
     from: &'a str,
     to: &'a str,

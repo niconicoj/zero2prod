@@ -850,6 +850,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "handlebars"
+version = "4.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "faa67bab9ff362228eb3d00bd024a4965d8231bbb7921167f0cfa66c6626b225"
+dependencies = [
+ "log",
+ "pest",
+ "pest_derive",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3105,6 +3119,7 @@ dependencies = [
  "rusty-hook",
  "secrecy",
  "serde",
+ "serde_json",
  "sqlx",
  "tokio",
  "tracing",
@@ -3116,15 +3131,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "zero2prod-client"
-version = "0.1.0"
-dependencies = [
- "email_address",
- "reqwest",
- "zero2prod-core",
-]
-
-[[package]]
 name = "zero2prod-core"
 version = "0.1.0"
 dependencies = [
@@ -3132,6 +3138,7 @@ dependencies = [
  "config",
  "email_address",
  "fake",
+ "handlebars",
  "http 1.0.0",
  "http-body 1.0.0",
  "hyper 1.0.1",
