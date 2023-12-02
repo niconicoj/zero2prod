@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use axum::Extension;
 use axum::{extract::rejection::FormRejection, Form};
 use hyper::StatusCode;
 
@@ -6,13 +9,19 @@ use sqlx::types::Uuid;
 
 use tracing::{info, instrument, Span};
 
+use crate::configuration::Configuration;
 use crate::db::DatabaseConnection;
 use crate::domain::NewSubscriber;
-use crate::error::{db_error, form_rejection};
+use crate::email::client::EmailClient;
+use crate::error::{db_error, form_rejection, internal_error};
+use crate::templates::{Template, TemplateEngine};
 
-#[instrument(name = "Adding a new subscriber", skip(conn, form))]
+#[instrument(name = "Adding a new subscriber", skip_all)]
 pub async fn subscribe(
     DatabaseConnection(mut conn): DatabaseConnection,
+    Extension(email_client): Extension<Arc<EmailClient>>,
+    Extension(config): Extension<Arc<Configuration>>,
+    Extension(template_engine): Extension<TemplateEngine>,
     form: Result<Form<NewSubscriber>, FormRejection>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     let form = form.map_err(form_rejection)?;
@@ -35,5 +44,26 @@ pub async fn subscribe(
     .execute(&mut *conn)
     .await
     .map_err(db_error)?;
+
+    info!("Sending confirmation email to {}", form.email);
+    let confirmation_link = format!(
+        "http://{}:{}/subscriptions/confirm",
+        config.app.host, config.app.port
+    );
+
+    email_client
+        .send_email(
+            &form.email,
+            "Hello",
+            &template_engine.render(Template::ConfirmationHtml {
+                link: &confirmation_link,
+            }),
+            &template_engine.render(Template::ConfirmationTxt {
+                link: &confirmation_link,
+            }),
+        )
+        .await
+        .map_err(internal_error)?;
+
     Ok(StatusCode::OK)
 }

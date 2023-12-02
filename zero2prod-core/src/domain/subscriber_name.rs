@@ -7,6 +7,21 @@ static FORBIDDEN_CHARS: [char; 9] = ['/', '(', ')', '"', '<', '>', '\\', '{', '}
 #[derive(Serialize)]
 pub struct SubscriberName(String);
 
+impl SubscriberName {
+    pub fn parse(s: String) -> Result<SubscriberName, String> {
+        let trimmed = s.trim().to_string();
+        if trimmed.is_empty() || trimmed.len() > 256 {
+            return Err("Invalid length".into());
+        }
+        for c in trimmed.chars() {
+            if FORBIDDEN_CHARS.contains(&c) {
+                return Err("Invalid character".into());
+            }
+        }
+        Ok(SubscriberName(trimmed))
+    }
+}
+
 impl AsRef<str> for SubscriberName {
     fn as_ref(&self) -> &str {
         &self.0
@@ -34,18 +49,10 @@ impl<'de> Visitor<'de> for SubscriberNameVisitor {
     where
         E: serde::de::Error,
     {
-        if value.is_empty() || value.len() > 256 {
-            return Err(serde::de::Error::invalid_length(value.len(), &self));
+        match SubscriberName::parse(value.to_owned()) {
+            Ok(name) => Ok(name),
+            Err(e) => Err(serde::de::Error::custom(e)),
         }
-        for c in value.chars() {
-            if FORBIDDEN_CHARS.contains(&c) {
-                return Err(serde::de::Error::invalid_value(
-                    serde::de::Unexpected::Char(c),
-                    &self,
-                ));
-            }
-        }
-        Ok(SubscriberName(value.to_owned()))
     }
 }
 

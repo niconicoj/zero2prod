@@ -2,6 +2,7 @@ use email_address::EmailAddress;
 use reqwest::Client;
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 #[derive(Clone)]
 pub struct EmailClient {
@@ -26,7 +27,7 @@ impl EmailClient {
 
     pub async fn send_email(
         &self,
-        recipient: EmailAddress,
+        recipient: &EmailAddress,
         subject: &str,
         html: &str,
         text: &str,
@@ -40,6 +41,8 @@ impl EmailClient {
             html_body: html,
             text_body: text,
         };
+
+        info!("Sending email, {}", url);
 
         let _ = self
             .http_client
@@ -55,6 +58,7 @@ impl EmailClient {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[derive(Debug)]
 struct SendEmailRequest<'a> {
     from: &'a str,
     to: &'a str,
@@ -136,7 +140,7 @@ mod tests {
         let content: String = content();
 
         let result = email_client
-            .send_email(subscriber_email, &subject, &content, &content)
+            .send_email(&subscriber_email, &subject, &content, &content)
             .await;
 
         assert!(result.is_ok());
@@ -162,7 +166,7 @@ mod tests {
         let content: String = content();
 
         let result = email_client
-            .send_email(subscriber_email, &subject, &content, &content)
+            .send_email(&subscriber_email, &subject, &content, &content)
             .await;
 
         assert!(result.is_err());
@@ -190,7 +194,7 @@ mod tests {
         let content: String = content();
 
         let result = email_client
-            .send_email(subscriber_email, &subject, &content, &content)
+            .send_email(&subscriber_email, &subject, &content, &content)
             .await;
 
         assert!(result.is_err());

@@ -26,7 +26,7 @@ fn parse_knobs(mut input: ItemFn) -> TokenStream {
 
     let body = input.body();
     let body = quote! {
-        ::zero2prod_core::testing::run_test(|test_app: ::zero2prod_core::testing::TestApp| {
+        ::zero2prod_core::testing::run_test(|test_stack: ::zero2prod_core::testing::TestStack| {
             ::std::boxed::Box::pin(async move #body)
         });
     };
@@ -143,7 +143,7 @@ mod tests {
         let expected = quote! {
             #[::core::prelude::v1::test]
             fn my_test() {
-            ::zero2prod_core::testing::run_test(|test_app: ::zero2prod_core::testing::TestApp| {
+            ::zero2prod_core::testing::run_test(|test_stack: ::zero2prod_core::testing::TestStack| {
                 ::std::boxed::Box::pin(async move {
                     assert_eq!(2 + 2, 4);
                 })
@@ -164,7 +164,7 @@ mod tests {
 
         let expected = quote! {
             struct MyStruct;
-            compile_error!{"expected `fn`"}
+            ::core::compile_error!{"expected `fn`"}
         };
 
         assert_eq!(output.to_string(), expected.to_string());
