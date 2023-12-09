@@ -1,34 +1,30 @@
-use axum::extract::rejection::FormRejection;
-use hyper::StatusCode;
+use std::fmt::Display;
 
-pub fn internal_error<E: std::error::Error + Send + Sync + 'static>(
-    err: E,
-) -> (StatusCode, String) {
-    tracing::error!("Internal server error: {}", err);
-    (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Internal server error".to_string(),
-    )
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq)]
+pub enum CoreError {
+    EmailAlreadyExists,
+    InvalidDomain(String),
+    Unexpected(String),
 }
 
-pub fn db_error(err: sqlx::Error) -> (StatusCode, String) {
-    match err {
-        sqlx::Error::Database(err) if err.is_unique_violation() => {
-            let err = err.to_string();
-            tracing::warn!("Bad request: {}", &err);
-            (StatusCode::CONFLICT, "bad request".to_string())
-        }
-        err => {
-            tracing::error!("Database error: {}", err);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Internal server error".to_string(),
-            )
+impl Display for CoreError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CoreError::EmailAlreadyExists => write!(f, "Email already exists"),
+            CoreError::InvalidDomain(msg) => write!(f, "Invalid domain: {}", msg),
+            CoreError::Unexpected(msg) => write!(f, "Unexpected error: {}", msg),
         }
     }
 }
 
-pub fn form_rejection(err: FormRejection) -> (StatusCode, String) {
-    tracing::info!("Bad request: {}", err.body_text());
-    (StatusCode::BAD_REQUEST, err.body_text())
+pub type CoreResult<T> = Result<T, CoreError>;
+
+impl<T> From<T> for CoreError
+where
+    T: std::error::Error,
+{
+    fn from(value: T) -> Self {
+        CoreError::Unexpected(value.to_string())
+    }
 }

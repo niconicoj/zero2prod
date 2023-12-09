@@ -1,0 +1,3 @@
+mod subscription_repository_impl;
+
+pub use subscription_repository_impl::SubscriptionRepositoryImpl;

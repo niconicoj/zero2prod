@@ -4,6 +4,5 @@ resolver = "2"
 
 members = [
     "zero2prod", 
-    "zero2prod-core",
-    "zero2prod-macros",
+    "zero2prod-*",
 ]
