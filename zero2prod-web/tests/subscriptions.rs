@@ -7,8 +7,6 @@ use zero2prod_macros::integration_test;
 
 #[integration_test]
 fn subscribe_returns_a_200_for_valid_form_data(test_stack: TestStack) {
-    let client = reqwest::Client::new();
-
     let body = "name=John%20Doe&email=john.doe@gmail.com";
 
     Mock::given(path("/email"))
@@ -17,13 +15,11 @@ fn subscribe_returns_a_200_for_valid_form_data(test_stack: TestStack) {
         .mount(&test_stack.email_server)
         .await;
 
-    let response = client
-        .post(&format!("{}/subscriptions", test_stack.app.address))
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .body(body)
-        .send()
+    let response = test_stack
+        .client
+        .subscribe(body)
         .await
-        .expect("Failed to execute request");
+        .expect("failed to execute request");
 
     assert_eq!(response.status(), StatusCode::OK);
 
@@ -38,8 +34,6 @@ fn subscribe_returns_a_200_for_valid_form_data(test_stack: TestStack) {
 
 #[integration_test]
 fn subscribe_sends_a_confirmation_email_for_valid_data(test_stack: TestStack) {
-    let client = reqwest::Client::new();
-
     let body = "name=John%20Doe&email=john.doe@gmail.com";
 
     Mock::given(path("/email"))
@@ -49,11 +43,9 @@ fn subscribe_sends_a_confirmation_email_for_valid_data(test_stack: TestStack) {
         .mount(&test_stack.email_server)
         .await;
 
-    let response = client
-        .post(&format!("{}/subscriptions", test_stack.app.address))
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .body(body)
-        .send()
+    let response = test_stack
+        .client
+        .subscribe(body)
         .await
         .expect("Failed to execute request");
 
@@ -78,8 +70,6 @@ fn subscribe_sends_a_confirmation_email_for_valid_data(test_stack: TestStack) {
 
 #[integration_test]
 fn subscribe_returns_a_400_for_invalid_form_data(test_stack: TestStack) {
-    let client = reqwest::Client::new();
-
     let test_cases = vec![
         ("name=John%20Doe", "missing the email"),
         ("email=john.doe@gmail.com", "missing the name"),
@@ -88,11 +78,9 @@ fn subscribe_returns_a_400_for_invalid_form_data(test_stack: TestStack) {
     ];
 
     for (body, error) in test_cases {
-        let response = client
-            .post(&format!("{}/subscriptions", test_stack.app.address))
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .body(body)
-            .send()
+        let response = test_stack
+            .client
+            .subscribe(body)
             .await
             .expect("Failed to execute request");
 

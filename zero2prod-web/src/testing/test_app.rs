@@ -1,6 +1,7 @@
 use std::{future::Future, panic, pin::Pin};
 
 use crate::{
+    client::Z2PClient,
     configuration::{self, Configuration, WithDb},
     server::{self, Address},
     telemetry::setup_subscriber,
@@ -20,6 +21,7 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 
 pub struct TestStack {
     pub app: TestApp,
+    pub client: Z2PClient,
     pub email_server: MockServer,
 }
 
@@ -30,7 +32,7 @@ pub struct TestApp {
     pub pool: PgPool,
 }
 
-pub async fn spawn_app() -> (TestApp, MockServer) {
+pub async fn spawn_app() -> (TestApp, Z2PClient, MockServer) {
     Lazy::force(&TRACING);
 
     let email_server = MockServer::start().await;
@@ -41,6 +43,8 @@ pub async fn spawn_app() -> (TestApp, MockServer) {
     let (server, address, pool) = server::start(&config).await;
     configure_database(&config).await;
 
+    let client = Z2PClient::new(address.to_string());
+
     tokio::spawn(async { server.await.unwrap() });
     (
         TestApp {
@@ -48,6 +52,7 @@ pub async fn spawn_app() -> (TestApp, MockServer) {
             address,
             pool,
         },
+        client,
         email_server,
     )
 }
@@ -110,9 +115,10 @@ where
             .build()
             .unwrap()
             .block_on(async {
-                let (test_app, email_server) = spawn_app().await;
+                let (test_app, client, email_server) = spawn_app().await;
 
                 test(TestStack {
+                    client,
                     app: test_app.clone(),
                     email_server,
                 })
