@@ -3,13 +3,8 @@ use std::{
     sync::Arc,
 };
 
-use crate::{
-    configuration::Configuration,
-    email::{self, client::EmailClient},
-    templates,
-};
+use crate::{configuration::Configuration, service::EmailServiceImpl, template::TemplateEngine};
 use axum::{
-    extract::FromRef,
     routing::{get, post, IntoMakeService},
     serve::Serve,
     Extension, Router,
@@ -21,8 +16,8 @@ use tokio::net::TcpListener;
 
 use crate::{
     configuration::WithDb,
-    handlers::{health_check::health_check, subscriptions::subscribe},
-    request_id::TraceIdLayer,
+    handlers::{health_check, subscribe},
+    layer::TraceIdLayer,
 };
 
 #[derive(Default, Clone)]
@@ -39,23 +34,6 @@ impl Display for Address {
     }
 }
 
-pub struct AppState {
-    pool: PgPool,
-    email_client: EmailClient,
-}
-
-impl FromRef<AppState> for PgPool {
-    fn from_ref(state: &AppState) -> Self {
-        state.pool.clone()
-    }
-}
-
-impl FromRef<AppState> for EmailClient {
-    fn from_ref(state: &AppState) -> Self {
-        state.email_client.clone()
-    }
-}
-
 pub async fn start(configuration: &Configuration) -> (Server, Address, PgPool) {
     let address = format!("{}:{}", configuration.app.host, configuration.app.port);
     let listener = TcpListener::bind(address)
@@ -67,19 +45,24 @@ pub async fn start(configuration: &Configuration) -> (Server, Address, PgPool) {
         .acquire_timeout(std::time::Duration::from_millis(configuration.db.timeout))
         .connect_lazy_with(configuration.db.connection_options(WithDb::Yes));
 
-    let email_client = Arc::new(email::client::EmailClient::from_config(
+    let template_engine = Arc::new(TemplateEngine::init());
+
+    let email_client = Arc::new(EmailServiceImpl::from_config(
         &configuration.email_client,
+        template_engine.clone(),
     ));
 
-    let template_engine = templates::TemplateEngine::init();
+    let subscription_repository = Arc::new(crate::repository::SubscriptionRepositoryImpl::new(
+        pool.clone(),
+    ));
 
     let app = Router::new()
         .route("/health_check", get(health_check))
         .route("/subscriptions", post(subscribe))
         .with_state(pool.clone())
         .layer(Extension(email_client))
+        .layer(Extension(subscription_repository))
         .layer(Extension(Arc::new(configuration.clone())))
-        .layer(Extension(template_engine))
         .layer(TraceIdLayer);
 
     let app_address = Address {

@@ -1,23 +1,21 @@
-use std::{fmt, str::FromStr};
+use std::fmt;
 
 use serde::{de::Visitor, Deserialize, Serialize};
 
-use crate::error::{CoreError, CoreResult};
-
 static FORBIDDEN_CHARS: [char; 9] = ['/', '(', ')', '"', '<', '>', '\\', '{', '}'];
 
-#[derive(Serialize, Debug, PartialEq, Clone)]
+#[derive(Serialize)]
 pub struct SubscriberName(String);
 
 impl SubscriberName {
-    pub fn parse(s: String) -> CoreResult<Self> {
+    pub fn parse(s: String) -> Result<SubscriberName, String> {
         let trimmed = s.trim().to_string();
         if trimmed.is_empty() || trimmed.len() > 256 {
-            return Err(CoreError::InvalidDomain("Invalid length".into()));
+            return Err("Invalid length".into());
         }
         for c in trimmed.chars() {
             if FORBIDDEN_CHARS.contains(&c) {
-                return Err(CoreError::InvalidDomain("Invalid character".into()));
+                return Err("Invalid character".into());
             }
         }
         Ok(SubscriberName(trimmed))
@@ -27,13 +25,6 @@ impl SubscriberName {
 impl AsRef<str> for SubscriberName {
     fn as_ref(&self) -> &str {
         &self.0
-    }
-}
-
-impl FromStr for SubscriberName {
-    type Err = CoreError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::parse(s.to_owned())
     }
 }
 

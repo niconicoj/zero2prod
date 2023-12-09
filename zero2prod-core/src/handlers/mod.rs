@@ -1,2 +1,3 @@
-pub mod health_check;
-pub mod subscriptions;
+mod subscribe;
+
+pub use subscribe::*;
